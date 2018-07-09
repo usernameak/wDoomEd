@@ -29,13 +29,14 @@ void WDEdMainCanvas::Render(wxPaintEvent& WXUNUSED(event)) {
     glLoadIdentity();
     gluOrtho2D(0, (GLint)GetSize().x, 0, (GLint)GetSize().y);
     glTranslatef((GLint)GetSize().x / 2, (GLint)GetSize().y / 2, 0.0f);
+
     glMatrixMode(GL_MODELVIEW);
 
-    glLoadIdentity();
-    glTranslatef(offsetX, -offsetY, 0.0f);
-    glScalef(scale, scale, scale);
-
     if(WDEdMapEditor::mapIsCurrentlyLoaded) {
+        glLoadIdentity();
+        glTranslatef(offsetX, -offsetY, 0.0f);
+        glScalef(scale, scale, scale);
+
         glColor4f(0.2, 0.2, 0.2, 1.0);
 
         glBegin(GL_LINES);
@@ -56,30 +57,53 @@ void WDEdMainCanvas::Render(wxPaintEvent& WXUNUSED(event)) {
                 glVertex2f(finalX, y);
             }
         glEnd();
-    }
 
-    glLoadIdentity();
-    glTranslatef(offsetX, -offsetY, 0.0f);
-    glScalef(scale, scale, scale);
+        glLoadIdentity();
+        glTranslatef(offsetX, -offsetY, 0.0f);
+        glScalef(scale, scale, scale);
 
-    if(WDEdMapEditor::mapIsCurrentlyLoaded) {
+
         glColor4f(1.0, 1.0, 1.0, 1.0);
 
         glBegin(GL_LINES);
         for(wxVector<WDEdMapEditor::LineDef>::iterator it = WDEdMapEditor::mapLinedefs.begin();
             it != WDEdMapEditor::mapLinedefs.end();
             ++it) {
-                if(&*it == hoveredLinedef) {
-                    glColor4f(1.0, 1.0, 0.0, 1.0);
+                if(currentTool == WDED_ME_TOOL_LINES && &*it == hoveredLinedef) {
+                    glColor4f(1.0, 0.6, 0.0, 1.0);
                 }
                 glVertex2i(WDEdMapEditor::mapVertexes[it->beginVertex].x, WDEdMapEditor::mapVertexes[it->beginVertex].y);
                 glVertex2i(WDEdMapEditor::mapVertexes[it->endVertex].x, WDEdMapEditor::mapVertexes[it->endVertex].y);
-                if(&*it == hoveredLinedef) {
+                if(currentTool == WDED_ME_TOOL_LINES && &*it == hoveredLinedef) {
                     glColor4f(1.0, 1.0, 1.0, 1.0);
                 }
         }
+        glEnd();
+
+        glLoadIdentity();
+        glTranslatef(offsetX, -offsetY, 0.0f);
+
+        if(WDEdMapEditor::currentTool == WDED_ME_TOOL_VERTS) {
+            glBegin(GL_QUADS);
+            for(wxVector<WDEdMapEditor::Vertex>::iterator it = WDEdMapEditor::mapVertexes.begin();
+            it != WDEdMapEditor::mapVertexes.end();
+            ++it) {
+                if(&*it == hoveredVertex) {
+                    glColor4f(1.0, 0.6, 0.0, 1.0);
+                }
+                glVertex2i(it->x * scale - 2, it->y * scale - 2);
+                glVertex2i(it->x * scale - 2, it->y * scale + 2);
+                glVertex2i(it->x * scale + 2, it->y * scale + 2);
+                glVertex2i(it->x * scale + 2, it->y * scale - 2);
+                if(&*it == hoveredVertex) {
+                    glColor4f(1.0, 1.0, 1.0, 1.0);
+                }
+            }
+            glEnd();
+        }
     }
-    glEnd();
+
+    
 
     glFlush();
     SwapBuffers();
@@ -115,7 +139,7 @@ void WDEdMainCanvas::Drag(wxMouseEvent& event) {
     }
 }
 
-static double distanceFromPointToLine(double x1, double y1, double x2, double y2, double x3, double y3){
+static double distanceFromPointToLine(double x1, double y1, double x2, double y2, double x3, double y3) {
     float px=x2-x1;
     float py=y2-y1;
     float temp=(px*px)+(py*py);
@@ -134,6 +158,14 @@ static double distanceFromPointToLine(double x1, double y1, double x2, double y2
     return dist;
 }
 
+static double distance(double x1, double y1, double x2, double y2) {
+    double square_difference_x = (x2 - x1) * (x2 - x1);
+    double square_difference_y = (y2 - y1) * (y2 - y1);
+    double sum = square_difference_x + square_difference_y;
+    double value = sqrt(sum);
+    return value;
+}
+
 void WDEdMainCanvas::MouseMove(wxMouseEvent& event) {
     wxPoint pos = event.GetPosition();
     int x = pos.x;
@@ -146,25 +178,46 @@ void WDEdMainCanvas::MouseMove(wxMouseEvent& event) {
     y /= scale;
     y = -y;
     wxGetApp().frame->GetStatusBar()->SetStatusText(wxString::Format("(%d, %d)", x, y), WDED_SB_EL_COORDS);
-    LineDef *leastLine = nullptr;
-    double leastDist = INFINITY;
-    for(wxVector<WDEdMapEditor::LineDef>::iterator it = WDEdMapEditor::mapLinedefs.begin();
-            it != WDEdMapEditor::mapLinedefs.end();
-            ++it) {
-            Vertex beginVert = mapVertexes[it->beginVertex];
-            Vertex endVert = mapVertexes[it->endVertex];
-            double dist = distanceFromPointToLine(beginVert.x, beginVert.y, endVert.x, endVert.y, x, y);
+    {
+        LineDef *leastLine = nullptr;
+        double leastDist = INFINITY;
+        for(wxVector<WDEdMapEditor::LineDef>::iterator it = WDEdMapEditor::mapLinedefs.begin();
+                it != WDEdMapEditor::mapLinedefs.end();
+                ++it) {
+                Vertex beginVert = mapVertexes[it->beginVertex];
+                Vertex endVert = mapVertexes[it->endVertex];
+                double dist = distanceFromPointToLine(beginVert.x, beginVert.y, endVert.x, endVert.y, x, y);
 
-            if(dist < leastDist) {
-                leastDist = dist;
-                leastLine = &*it;
+                if(dist < leastDist) {
+                    leastDist = dist;
+                    leastLine = &*it;
+                }
             }
+        if(leastDist > 5) leastLine = nullptr;
+        if(hoveredLinedef != leastLine) {
+            hoveredLinedef = leastLine;
+            Refresh();
+            Update();
         }
-    if(leastDist > 5) leastLine = nullptr;
-    if(hoveredLinedef != leastLine) {
-        hoveredLinedef = leastLine;
-        Refresh();
-        Update();
+    }
+    {
+        Vertex *leastVert = nullptr;
+        double leastDist = INFINITY;
+        for(wxVector<WDEdMapEditor::Vertex>::iterator it = WDEdMapEditor::mapVertexes.begin();
+            it != WDEdMapEditor::mapVertexes.end();
+            ++it) {
+                double dist = distance(it->x, it->y, x, y);
+                if(dist < leastDist) {
+                    leastDist = dist;
+                    leastVert = &*it;
+                }
+            }
+        if(leastDist > 5) leastVert = nullptr;
+        if(hoveredVertex != leastVert) {
+            hoveredVertex = leastVert;
+            Refresh();
+            Update();
+        }
     }
 }
 

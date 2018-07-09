@@ -5,6 +5,11 @@
 #include "wad.h"
 
 namespace WDEdMapEditor {
+    enum WDEdMapEditorTool {
+        WDED_ME_TOOL_VERTS,
+        WDED_ME_TOOL_LINES,
+    };
+
     struct LineDef {
         uint16_t beginVertex;
         uint16_t endVertex;
@@ -20,13 +25,14 @@ namespace WDEdMapEditor {
         int16_t y;
     };
 
-
     extern bool dragging;
     extern float offsetX, offsetY;
     extern int mousePrevX, mousePrevY;
     extern int gridSize;
     extern float scale;
     extern LineDef *hoveredLinedef;
+    extern Vertex *hoveredVertex;
+    extern WDEdMapEditorTool currentTool;
 
     extern wxVector<LineDef> mapLinedefs;
     extern wxVector<Vertex> mapVertexes;

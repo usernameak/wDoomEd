@@ -5,6 +5,7 @@
 #include "main_frame.h"
 
 bool WDEdApp::OnInit() {
+    wxInitAllImageHandlers();
     new WDEdMainFrame();
     frame->Maximize();
     frame->Show(true);

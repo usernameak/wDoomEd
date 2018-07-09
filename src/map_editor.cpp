@@ -16,6 +16,8 @@ int WDEdMapEditor::mousePrevX, WDEdMapEditor::mousePrevY;
 int WDEdMapEditor::gridSize = 64;
 float WDEdMapEditor::scale = 1.0f;
 LineDef *WDEdMapEditor::hoveredLinedef = nullptr;
+Vertex *WDEdMapEditor::hoveredVertex = nullptr;
+WDEdMapEditorTool WDEdMapEditor::currentTool = WDED_ME_TOOL_VERTS;
 
 void WDEdMapEditor::OpenArchive(wxString source) {
     mapIsCurrentlyLoaded = false;

@@ -4,7 +4,10 @@
 #include "canvas.h"
 
 enum WDEdMainFrameIDs {
-    ID_FILE_OPEN = 1
+    ID_FILE_OPEN = 1,
+    ID_TOOL_VERTS,
+    ID_TOOL_LINEDEFS,
+    ID_TOOL_MAX
 };
 
 enum WDEdStatusBarElement {
@@ -21,6 +24,7 @@ public:
     void Exit(wxCommandEvent&);
     WDEdMainCanvas *canvas;
     void Resize(wxSizeEvent& evt);
+    void ChangeTool(wxCommandEvent& evt);
 private:
     DECLARE_EVENT_TABLE()
 };

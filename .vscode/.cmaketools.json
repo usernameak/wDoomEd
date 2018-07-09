@@ -1,78 +1,78 @@
 {
-  "variant": {
-    "label": "Debug",
-    "keywordSettings": {
-      "buildType": "debug"
+    "variant": {
+      "label": "Debug",
+      "keywordSettings": {
+        "buildType": "debug"
+      },
+      "description": "Emit debug information without performing optimizations"
     },
-    "description": "Emit debug information without performing optimizations"
-  },
-  "activeEnvironments": [],
-  "codeModel": {
-    "configurations": [
-      {
-        "name": "Debug",
-        "projects": [
-          {
-            "buildDirectory": "/home/usernameak/wDoomEd/build",
-            "hasInstallRule": false,
-            "minimumCMakeVersion": "3.0",
-            "name": "Project",
-            "sourceDirectory": "/home/usernameak/wDoomEd",
-            "targets": [
-              {
-                "artifacts": [
-                  "/home/usernameak/wDoomEd/build/src/wDoomEd"
-                ],
-                "buildDirectory": "/home/usernameak/wDoomEd/build/src",
-                "fileGroups": [
-                  {
-                    "compileFlags": " -pthread -g  ",
-                    "defines": [
-                      "WXUSINGDLL",
-                      "_FILE_OFFSET_BITS=64",
-                      "__WXGTK__"
-                    ],
-                    "includePath": [
-                      {
-                        "path": "/home/usernameak/wDoomEd/src/."
-                      },
-                      {
-                        "isSystem": true,
-                        "path": "/usr/lib/wx/include/gtk2-unicode-3.0"
-                      },
-                      {
-                        "isSystem": true,
-                        "path": "/usr/include/wx-3.0"
-                      }
-                    ],
-                    "isGenerated": false,
-                    "language": "CXX",
-                    "sources": [
-                      "app.cpp",
-                      "main_frame.cpp",
-                      "canvas.cpp",
-                      "wad.cpp",
-                      "map_editor.cpp"
-                    ]
-                  }
-                ],
-                "fullName": "wDoomEd",
-                "isGeneratorProvided": false,
-                "linkFlags": "-rdynamic",
-                "linkLanguageFlags": "-pthread -g",
-                "linkLibraries": "-pthread -lwx_gtk2u_gl-3.0 -lwx_gtk2u_core-3.0 -lwx_baseu-3.0 -lGL -lGLU",
-                "linkerLanguage": "CXX",
-                "name": "wDoomEd",
-                "sourceDirectory": "/home/usernameak/wDoomEd/src",
-                "type": "EXECUTABLE"
-              }
-            ]
-          }
-        ]
-      }
-    ],
-    "cookie": "0.08398576627130794",
-    "inReplyTo": "codemodel",
-    "type": "reply"
+    "activeEnvironments": [],
+    "codeModel": {
+      "configurations": [
+        {
+          "name": "Debug",
+          "projects": [
+            {
+              "buildDirectory": "/home/usernameak/wDoomEd/build",
+              "hasInstallRule": false,
+              "minimumCMakeVersion": "3.0",
+              "name": "Project",
+              "sourceDirectory": "/home/usernameak/wDoomEd",
+              "targets": [
+                {
+                  "artifacts": [
+                    "/home/usernameak/wDoomEd/build/src/wDoomEd"
+                  ],
+                  "buildDirectory": "/home/usernameak/wDoomEd/build/src",
+                  "fileGroups": [
+                    {
+                      "compileFlags": " -pthread -g  ",
+                      "defines": [
+                        "WXUSINGDLL",
+                        "_FILE_OFFSET_BITS=64",
+                        "__WXGTK__"
+                      ],
+                      "includePath": [
+                        {
+                          "path": "/home/usernameak/wDoomEd/src/."
+                        },
+                        {
+                          "isSystem": true,
+                          "path": "/usr/lib/wx/include/gtk2-unicode-3.0"
+                        },
+                        {
+                          "isSystem": true,
+                          "path": "/usr/include/wx-3.0"
+                        }
+                      ],
+                      "isGenerated": false,
+                      "language": "CXX",
+                      "sources": [
+                        "app.cpp",
+                        "main_frame.cpp",
+                        "canvas.cpp",
+                        "wad.cpp",
+                        "map_editor.cpp"
+                      ]
+                    }
+                  ],
+                  "fullName": "wDoomEd",
+                  "isGeneratorProvided": false,
+                  "linkFlags": "-rdynamic",
+                  "linkLanguageFlags": "-pthread -g",
+                  "linkLibraries": "-pthread -lwx_gtk2u_gl-3.0 -lwx_gtk2u_core-3.0 -lwx_baseu-3.0 -lGL -lGLU",
+                  "linkerLanguage": "CXX",
+                  "name": "wDoomEd",
+                  "sourceDirectory": "/home/usernameak/wDoomEd/src",
+                  "type": "EXECUTABLE"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "cookie": "0.08398576627130794",
+      "inReplyTo": "codemodel",
+      "type": "reply"
+    }
   }
-}

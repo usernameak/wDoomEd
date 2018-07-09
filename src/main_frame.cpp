@@ -21,6 +21,17 @@ WDEdMainFrame::WDEdMainFrame() : wxFrame::wxFrame(nullptr, wxID_ANY, "wDoomEd") 
     statusBar->SetStatusText("(0, 0)", WDED_SB_EL_COORDS);
     SetStatusBar(statusBar);
 
+    wxToolBar *toolBar = new wxToolBar(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTB_DEFAULT_STYLE);
+    {
+        wxImage img("res/icon/verts.png");
+        toolBar->AddRadioTool(ID_TOOL_VERTS, "Vertexes", img);
+    }
+    {
+        wxImage img("res/icon/lines.png");
+        toolBar->AddRadioTool(ID_TOOL_LINEDEFS, "Linedefs", img);
+    }
+    SetToolBar(toolBar);
+
     canvas = new WDEdMainCanvas(this);
 }
 
@@ -36,8 +47,23 @@ void WDEdMainFrame::OpenFile(wxCommandEvent & WXUNUSED(event)) {
     }
 }
 
+void WDEdMainFrame::ChangeTool(wxCommandEvent &event) {
+    int id = event.GetId();
+    switch(id) {
+        case ID_TOOL_VERTS:
+            WDEdMapEditor::currentTool = WDEdMapEditor::WDED_ME_TOOL_VERTS;
+        break;
+        case ID_TOOL_LINEDEFS:
+            WDEdMapEditor::currentTool = WDEdMapEditor::WDED_ME_TOOL_LINES;
+        break;
+    }
+    canvas->Refresh();
+    canvas->Update();
+}
+
 
 BEGIN_EVENT_TABLE(WDEdMainFrame, wxFrame)
-    EVT_MENU    (ID_FILE_OPEN, WDEdMainFrame::OpenFile)
-    EVT_MENU    (wxID_EXIT, WDEdMainFrame::Exit)
+    EVT_MENU      (ID_FILE_OPEN, WDEdMainFrame::OpenFile)
+    EVT_MENU      (wxID_EXIT, WDEdMainFrame::Exit)
+    EVT_MENU_RANGE(ID_TOOL_VERTS, ID_TOOL_MAX, WDEdMainFrame::ChangeTool)
 END_EVENT_TABLE()
