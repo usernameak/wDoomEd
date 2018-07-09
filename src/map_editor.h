@@ -33,6 +33,7 @@ namespace WDEdMapEditor {
     extern LineDef *hoveredLinedef;
     extern Vertex *hoveredVertex;
     extern WDEdMapEditorTool currentTool;
+    extern int pointedX, pointedY;
 
     extern wxVector<LineDef> mapLinedefs;
     extern wxVector<Vertex> mapVertexes;

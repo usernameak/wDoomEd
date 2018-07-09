@@ -19,6 +19,9 @@ LineDef *WDEdMapEditor::hoveredLinedef = nullptr;
 Vertex *WDEdMapEditor::hoveredVertex = nullptr;
 WDEdMapEditorTool WDEdMapEditor::currentTool = WDED_ME_TOOL_VERTS;
 
+
+int WDEdMapEditor::pointedX = 0, WDEdMapEditor::pointedY = 0;
+
 void WDEdMapEditor::OpenArchive(wxString source) {
     mapIsCurrentlyLoaded = false;
     hoveredLinedef = nullptr;

@@ -49,12 +49,24 @@ void WDEdMainCanvas::Render(wxPaintEvent& WXUNUSED(event)) {
             initialY = initialY - fmod(initialY, step) - step;
             float finalY = GetSize().y * 0.5 / scale + offsetY / scale;
             for(float x = initialX; x < finalX; x += step) {
+                if(x == pointedX) {
+                    glColor4f(0.4, 0.4, 0.4, 1.0);
+                }
                 glVertex2f(x, initialY);
                 glVertex2f(x, finalY);
+                if(x == pointedX) {
+                    glColor4f(0.2, 0.2, 0.2, 1.0);
+                }
             }
             for(float y = initialY; y < finalY; y += step) {
+                if(y == pointedY) {
+                    glColor4f(0.4, 0.4, 0.4, 1.0);
+                }
                 glVertex2f(initialX, y);
                 glVertex2f(finalX, y);
+                if(y == pointedY) {
+                    glColor4f(0.2, 0.2, 0.2, 1.0);
+                }
             }
         glEnd();
 
@@ -134,9 +146,8 @@ void WDEdMainCanvas::Drag(wxMouseEvent& event) {
         mousePrevY = mouseOnScreen.y;
         Refresh();
         Update();
-    } else {
-        event.Skip();
     }
+    event.Skip();
 }
 
 static double distanceFromPointToLine(double x1, double y1, double x2, double y2, double x3, double y3) {
@@ -177,7 +188,11 @@ void WDEdMainCanvas::MouseMove(wxMouseEvent& event) {
     x /= scale;
     y /= scale;
     y = -y;
-    wxGetApp().frame->GetStatusBar()->SetStatusText(wxString::Format("(%d, %d)", x, y), WDED_SB_EL_COORDS);
+
+    pointedX = round((double)x / gridSize) * gridSize;
+    pointedY = round((double)y / gridSize) * gridSize;
+    wxGetApp().frame->GetStatusBar()->SetStatusText(wxString::Format("(%d, %d)", pointedX, pointedY), WDED_SB_EL_COORDS);
+
     {
         LineDef *leastLine = nullptr;
         double leastDist = INFINITY;
@@ -193,11 +208,9 @@ void WDEdMainCanvas::MouseMove(wxMouseEvent& event) {
                     leastLine = &*it;
                 }
             }
-        if(leastDist > 5) leastLine = nullptr;
+        if(leastDist > 12 / scale) leastLine = nullptr;
         if(hoveredLinedef != leastLine) {
             hoveredLinedef = leastLine;
-            Refresh();
-            Update();
         }
     }
     {
@@ -212,13 +225,13 @@ void WDEdMainCanvas::MouseMove(wxMouseEvent& event) {
                     leastVert = &*it;
                 }
             }
-        if(leastDist > 5) leastVert = nullptr;
+        if(leastDist > 12 / scale) leastVert = nullptr;
         if(hoveredVertex != leastVert) {
             hoveredVertex = leastVert;
-            Refresh();
-            Update();
         }
     }
+    Refresh();
+    Update();
 }
 
 
