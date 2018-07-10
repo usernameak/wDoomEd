@@ -54,10 +54,10 @@ protected:
 
 class WDEdWADEntry : public wxArchiveEntry {
 private:
-    WDEdWADEntry();
     WDEdWADEntryDesc desc;
     friend wxArchiveEntry *WDEdWADInputStream::DoGetNextEntry();
 public:
+    WDEdWADEntry();
     virtual wxDateTime GetDateTime() const;
     virtual wxFileOffset GetSize() const;
     virtual wxFileOffset GetOffset() const;
@@ -73,4 +73,37 @@ public:
     virtual void SetName(const wxString&, wxPathFormat);
     virtual void SetOffset(wxFileOffset);
     virtual wxArchiveEntry* DoClone() const;
+    inline const WDEdWADEntryDesc &GetDesc() {return desc;}
+};
+
+class WDEdWADOutputStream : public wxArchiveOutputStream {
+        size_t m_last_write;
+        wxVector<WDEdWADEntry> entries;
+        WDEdWADEntry *currentEntry = nullptr;
+    public:
+        WDEdWADOutputStream(wxOutputStream *, wxString wadType);
+        WDEdWADOutputStream(wxOutputStream &, wxString wadType);
+        ~WDEdWADOutputStream();
+        void Init(wxString &);
+
+        virtual bool PutNextEntry(wxArchiveEntry *entry);
+        virtual bool PutNextEntry(const wxString&, const wxDateTime&, wxFileOffset);
+        virtual bool PutNextDirEntry(const wxString&, const wxDateTime&);
+        virtual bool CopyEntry(wxArchiveEntry*, wxArchiveInputStream&);
+        virtual bool CopyArchiveMetaData(wxArchiveInputStream& stream);
+        virtual bool CloseEntry();
+        virtual bool Close();
+
+        virtual wxFileOffset SeekO (wxFileOffset pos, wxSeekMode mode=wxFromStart);
+        virtual wxFileOffset TellO () const;
+        virtual wxOutputStream &Write(const void *buffer, size_t size);
+        virtual size_t LastWrite () const;
+
+        virtual bool IsSeekable() const;
+        virtual bool IsOk() const;
+        virtual wxFileOffset GetLength() const;
+        virtual size_t GetSize() const;
+    protected:
+        virtual wxFileOffset OnSysTell () const;
+        virtual wxFileOffset OnSysSeek (wxFileOffset pos, wxSeekMode mode);
 };

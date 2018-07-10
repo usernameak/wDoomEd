@@ -10,6 +10,12 @@ namespace WDEdMapEditor {
         WDED_ME_TOOL_LINES,
     };
 
+    enum WDEdMapEditorDragType {
+        WDED_DRAG_NONE,
+        WDED_DRAG_MOVESCREEN,
+        WDED_DRAG_MOVEELEM,
+    };
+
     struct LineDef {
         uint16_t beginVertex;
         uint16_t endVertex;
@@ -25,18 +31,37 @@ namespace WDEdMapEditor {
         int16_t y;
     };
 
-    extern bool dragging;
-    extern float offsetX, offsetY;
+    union WDEdAnyElement {
+        void *elem;
+        LineDef *line;
+        Vertex *vertex;
+        inline WDEdAnyElement() {};
+        inline WDEdAnyElement(void * elem) : elem(elem) {};
+        inline WDEdAnyElement(LineDef *line) : line(line) {};
+        inline WDEdAnyElement(Vertex *vertex) : vertex(vertex) {};
+    };
+
+    extern WDEdMapEditorDragType dragging;
+    extern WDEdAnyElement draggingElement;
     extern int mousePrevX, mousePrevY;
+    
+    extern float offsetX, offsetY;
     extern int gridSize;
     extern float scale;
-    extern LineDef *hoveredLinedef;
-    extern Vertex *hoveredVertex;
+
+    extern WDEdAnyElement hoveredElement;
+    
     extern WDEdMapEditorTool currentTool;
+
     extern int pointedX, pointedY;
 
     extern wxVector<LineDef> mapLinedefs;
     extern wxVector<Vertex> mapVertexes;
     extern bool mapIsCurrentlyLoaded;
+
+
     void OpenArchive(wxString source);
+    void SaveArchive(wxString target);
+    void SetTool(WDEdMapEditorTool tool);
+    bool IsElementHighlighted(const WDEdAnyElement &elem);
 }

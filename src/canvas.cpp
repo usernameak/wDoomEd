@@ -81,12 +81,12 @@ void WDEdMainCanvas::Render(wxPaintEvent& WXUNUSED(event)) {
         for(wxVector<WDEdMapEditor::LineDef>::iterator it = WDEdMapEditor::mapLinedefs.begin();
             it != WDEdMapEditor::mapLinedefs.end();
             ++it) {
-                if(currentTool == WDED_ME_TOOL_LINES && &*it == hoveredLinedef) {
+                if(IsElementHighlighted(&*it)) {
                     glColor4f(1.0, 0.6, 0.0, 1.0);
                 }
                 glVertex2i(WDEdMapEditor::mapVertexes[it->beginVertex].x, WDEdMapEditor::mapVertexes[it->beginVertex].y);
                 glVertex2i(WDEdMapEditor::mapVertexes[it->endVertex].x, WDEdMapEditor::mapVertexes[it->endVertex].y);
-                if(currentTool == WDED_ME_TOOL_LINES && &*it == hoveredLinedef) {
+                if(IsElementHighlighted(&*it)) {
                     glColor4f(1.0, 1.0, 1.0, 1.0);
                 }
         }
@@ -100,14 +100,14 @@ void WDEdMainCanvas::Render(wxPaintEvent& WXUNUSED(event)) {
             for(wxVector<WDEdMapEditor::Vertex>::iterator it = WDEdMapEditor::mapVertexes.begin();
             it != WDEdMapEditor::mapVertexes.end();
             ++it) {
-                if(&*it == hoveredVertex) {
+                if(IsElementHighlighted(&*it)) {
                     glColor4f(1.0, 0.6, 0.0, 1.0);
                 }
                 glVertex2i(it->x * scale - 2, it->y * scale - 2);
                 glVertex2i(it->x * scale - 2, it->y * scale + 2);
                 glVertex2i(it->x * scale + 2, it->y * scale + 2);
                 glVertex2i(it->x * scale + 2, it->y * scale - 2);
-                if(&*it == hoveredVertex) {
+                if(IsElementHighlighted(&*it)) {
                     glColor4f(1.0, 1.0, 1.0, 1.0);
                 }
             }
@@ -121,24 +121,47 @@ void WDEdMainCanvas::Render(wxPaintEvent& WXUNUSED(event)) {
     SwapBuffers();
 }
 
+wxPoint WDEdMainCanvas::convertCoordsScreenToWorld(wxPoint &pos) {
+    wxPoint ret(pos);
+    ret.x -= GetSize().x / 2;
+    ret.y -= GetSize().y / 2;
+    ret.x -= offsetX;
+    ret.y -= offsetY;
+    ret.x /= scale;
+    ret.y /= scale;
+    ret.y = -ret.y;
+    return ret;
+}
+
 void WDEdMainCanvas::StartDragging(wxMouseEvent& event) {
     SetFocus();
-    CaptureMouse();
-    wxSetCursor(wxCURSOR_SIZING);
-    dragging = true;
+    if(event.Button(wxMOUSE_BTN_MIDDLE)) {
+        CaptureMouse();
+        wxSetCursor(wxCURSOR_SIZING);
+        dragging = WDED_DRAG_MOVESCREEN;
+    } else if(event.Button(wxMOUSE_BTN_LEFT)) {
+        
+        CaptureMouse();
+        dragging = WDED_DRAG_MOVEELEM;
+        draggingElement = hoveredElement;
+    }
+
     wxPoint mouseOnScreen = wxGetMousePosition();
     mousePrevX = mouseOnScreen.x;
     mousePrevY = mouseOnScreen.y;
+
+    event.Skip();
 }
 
 void WDEdMainCanvas::EndDragging(wxMouseEvent& event) {
     ReleaseMouse();
     wxSetCursor(wxCURSOR_ARROW);
-    dragging = false;
+    dragging = WDED_DRAG_NONE;
+    draggingElement.elem = nullptr;
 }
 
 void WDEdMainCanvas::Drag(wxMouseEvent& event) {
-    if(dragging) {
+    if(dragging == WDED_DRAG_MOVESCREEN) {
         wxPoint mouseOnScreen = wxGetMousePosition();
         offsetX += mouseOnScreen.x - mousePrevX;
         offsetY += mouseOnScreen.y - mousePrevY;
@@ -146,6 +169,20 @@ void WDEdMainCanvas::Drag(wxMouseEvent& event) {
         mousePrevY = mouseOnScreen.y;
         Refresh();
         Update();
+    } else if(dragging == WDED_DRAG_MOVEELEM) {
+        wxPoint pos = event.GetPosition();
+        wxPoint wpos = convertCoordsScreenToWorld(pos);
+        pointedX = round((double)wpos.x / gridSize) * gridSize;
+        pointedY = round((double)wpos.y / gridSize) * gridSize;
+        switch(currentTool) {
+            case WDED_ME_TOOL_VERTS:
+                draggingElement.vertex->x = pointedX;
+                draggingElement.vertex->y = pointedY;
+            break;
+            case WDED_ME_TOOL_LINES:
+                
+            break;
+        }
     }
     event.Skip();
 }
@@ -179,21 +216,13 @@ static double distance(double x1, double y1, double x2, double y2) {
 
 void WDEdMainCanvas::MouseMove(wxMouseEvent& event) {
     wxPoint pos = event.GetPosition();
-    int x = pos.x;
-    int y = pos.y;
-    x -= GetSize().x / 2;
-    y -= GetSize().y / 2;
-    x -= offsetX;
-    y -= offsetY;
-    x /= scale;
-    y /= scale;
-    y = -y;
+    wxPoint wpos = convertCoordsScreenToWorld(pos);
 
-    pointedX = round((double)x / gridSize) * gridSize;
-    pointedY = round((double)y / gridSize) * gridSize;
+    pointedX = round((double)wpos.x / gridSize) * gridSize;
+    pointedY = round((double)wpos.y / gridSize) * gridSize;
     wxGetApp().frame->GetStatusBar()->SetStatusText(wxString::Format("(%d, %d)", pointedX, pointedY), WDED_SB_EL_COORDS);
 
-    {
+    if(currentTool == WDED_ME_TOOL_LINES) {
         LineDef *leastLine = nullptr;
         double leastDist = INFINITY;
         for(wxVector<WDEdMapEditor::LineDef>::iterator it = WDEdMapEditor::mapLinedefs.begin();
@@ -201,7 +230,7 @@ void WDEdMainCanvas::MouseMove(wxMouseEvent& event) {
                 ++it) {
                 Vertex beginVert = mapVertexes[it->beginVertex];
                 Vertex endVert = mapVertexes[it->endVertex];
-                double dist = distanceFromPointToLine(beginVert.x, beginVert.y, endVert.x, endVert.y, x, y);
+                double dist = distanceFromPointToLine(beginVert.x, beginVert.y, endVert.x, endVert.y, wpos.x, wpos.y);
 
                 if(dist < leastDist) {
                     leastDist = dist;
@@ -209,25 +238,24 @@ void WDEdMainCanvas::MouseMove(wxMouseEvent& event) {
                 }
             }
         if(leastDist > 12 / scale) leastLine = nullptr;
-        if(hoveredLinedef != leastLine) {
-            hoveredLinedef = leastLine;
+        if(hoveredElement.line != leastLine) {
+            hoveredElement.line = leastLine;
         }
-    }
-    {
+    } else if(currentTool == WDED_ME_TOOL_VERTS) {
         Vertex *leastVert = nullptr;
         double leastDist = INFINITY;
         for(wxVector<WDEdMapEditor::Vertex>::iterator it = WDEdMapEditor::mapVertexes.begin();
             it != WDEdMapEditor::mapVertexes.end();
             ++it) {
-                double dist = distance(it->x, it->y, x, y);
+                double dist = distance(it->x, it->y, wpos.x, wpos.y);
                 if(dist < leastDist) {
                     leastDist = dist;
                     leastVert = &*it;
                 }
             }
         if(leastDist > 12 / scale) leastVert = nullptr;
-        if(hoveredVertex != leastVert) {
-            hoveredVertex = leastVert;
+        if(hoveredElement.vertex != leastVert) {
+            hoveredElement.vertex = leastVert;
         }
     }
     Refresh();
@@ -277,10 +305,12 @@ void WDEdMainCanvas::MouseLeftDown(wxMouseEvent& event) {
 
 BEGIN_EVENT_TABLE(WDEdMainCanvas, wxGLCanvas)
     EVT_PAINT (WDEdMainCanvas::Render)
+    EVT_LEFT_DOWN (WDEdMainCanvas::StartDragging)
     EVT_MIDDLE_DOWN (WDEdMainCanvas::StartDragging)
     EVT_LEFT_DOWN (WDEdMainCanvas::MouseLeftDown)
     EVT_MOTION (WDEdMainCanvas::Drag)
     EVT_MOTION (WDEdMainCanvas::MouseMove)
     EVT_MIDDLE_UP (WDEdMainCanvas::EndDragging)
+    EVT_LEFT_UP (WDEdMainCanvas::EndDragging)
     EVT_KEY_DOWN (WDEdMainCanvas::KeyDown)
 END_EVENT_TABLE()

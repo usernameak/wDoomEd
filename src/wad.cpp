@@ -126,6 +126,165 @@ wxArchiveEntry *WDEdWADInputStream::DoGetNextEntry() {
     return entry;
 }
 
+WDEdWADOutputStream::WDEdWADOutputStream(wxOutputStream *os, wxString wadType) : wxArchiveOutputStream(os, wxConvUTF8) {
+    Init(wadType);
+}
+
+WDEdWADOutputStream::WDEdWADOutputStream(wxOutputStream &os, wxString wadType) : wxArchiveOutputStream(os, wxConvUTF8) {
+    Init(wadType);
+}
+
+WDEdWADOutputStream::~WDEdWADOutputStream() {}
+
+void WDEdWADOutputStream::Init(wxString &wadType) {
+    wxASSERT(m_parent_o_stream->IsSeekable());
+    wxASSERT(wadType.Len() == 4);
+    m_parent_o_stream->SeekO(0, wxFromStart);
+    m_parent_o_stream->WriteAll((const char *) wadType.c_str(), 4);
+    m_parent_o_stream->SeekO(12, wxFromStart);
+    CloseEntry();
+}
+
+bool WDEdWADOutputStream::CloseEntry() {
+    if(currentEntry) currentEntry = nullptr;
+    return true;
+}
+
+bool WDEdWADOutputStream::Close() {
+    CloseEntry();
+    
+    uint32_t offset = m_parent_o_stream->TellO();
+
+    m_parent_o_stream->SeekO(4, wxFromStart);
+
+    uint32_t size = entries.size();
+    m_parent_o_stream->WriteAll((const char *) &size, 4);
+    m_parent_o_stream->WriteAll((const char *) &offset, 4);
+
+    m_parent_o_stream->SeekO(0, wxFromEnd);
+
+    for(wxVector<WDEdWADEntry>::iterator it = entries.begin();
+            it != entries.end();
+            ++it) {
+                m_parent_o_stream->WriteAll((const char *) &it->GetDesc(), sizeof(WDEdWADEntryDesc));
+            }
+    return IsOk();
+}
+
+bool WDEdWADOutputStream::PutNextDirEntry(const wxString&, const wxDateTime&) {
+    return false;
+}
+
+bool WDEdWADOutputStream::PutNextEntry(const wxString& name, const wxDateTime& dt, wxFileOffset size) {
+    CloseEntry();
+    if(name.Len() > 8) return false;
+    WDEdWADEntry _entry;
+    entries.push_back(_entry);
+    currentEntry = &entries.back();
+    currentEntry->SetName(name, wxPATH_UNIX);
+    currentEntry->SetSize(0);
+    currentEntry->SetOffset(m_parent_o_stream->TellO());
+    return true;
+}
+
+bool WDEdWADOutputStream::PutNextEntry(wxArchiveEntry* _entry) {
+    CloseEntry();
+    WDEdWADEntry *entry = dynamic_cast<WDEdWADEntry *>(_entry);
+    entries.push_back(*entry);
+    currentEntry = &entries.back();
+    currentEntry->SetOffset(m_parent_o_stream->TellO());
+    currentEntry->SetSize(0);
+    return true;
+}
+
+bool WDEdWADOutputStream::IsOk() const {
+    return m_parent_o_stream->IsOk();
+}
+
+size_t WDEdWADOutputStream::GetSize() const {
+    if(!currentEntry) return 0;
+    wxFileOffset size = currentEntry->GetSize();
+    return size == wxInvalidOffset ? 0 : size;
+}
+
+wxFileOffset WDEdWADOutputStream::GetLength() const {
+    return currentEntry ? currentEntry->GetSize() : wxInvalidOffset;
+}
+
+bool WDEdWADOutputStream::IsSeekable() const {
+    return true;
+}
+
+wxOutputStream &WDEdWADOutputStream::Write(const void *buffer, size_t size) {
+    if(!currentEntry) {
+        m_last_write = 0;
+        return *this;
+    }
+    wxFileOffset ofs = m_parent_o_stream->TellO();
+    if(ofs >= currentEntry->GetSize()) currentEntry->SetSize(currentEntry->GetSize() + size);
+    m_parent_o_stream->Write(buffer, size);
+    m_last_write = m_parent_o_stream->LastWrite();
+    return *this;
+}
+
+size_t WDEdWADOutputStream::LastWrite () const {
+    return m_last_write;
+}
+
+wxFileOffset WDEdWADOutputStream::TellO () const {
+    return currentEntry ? m_parent_o_stream->TellO() - currentEntry->GetOffset() : wxInvalidOffset;
+}
+
+wxFileOffset WDEdWADOutputStream::OnSysSeek(long pos, wxSeekMode mode) {
+    if(!currentEntry) return wxInvalidOffset;
+    switch(mode) {
+        case wxFromEnd:
+            if(pos >= currentEntry->GetSize()) {
+                return wxInvalidOffset;
+            }
+            return m_parent_o_stream->SeekO(pos, mode);
+        break;
+        case wxFromStart:
+            if(pos >= currentEntry->GetSize()) {
+                return wxInvalidOffset;
+            }
+            return m_parent_o_stream->SeekO(currentEntry->GetOffset() + pos, mode);
+        break;
+        case wxFromCurrent:
+            if(TellO() + pos >= currentEntry->GetSize() || TellO() + pos < 0) {
+                return wxInvalidOffset;
+            }
+            return m_parent_o_stream->SeekO(pos, mode);
+        break;
+    }
+    return wxInvalidOffset;
+}
+
+wxFileOffset WDEdWADOutputStream::OnSysTell() const {
+    return TellO();
+}
+
+wxFileOffset WDEdWADOutputStream::SeekO(long pos, wxSeekMode mode) {
+    return OnSysSeek(pos, mode);
+}
+
+bool WDEdWADOutputStream::CopyEntry(wxArchiveEntry *entry, wxArchiveInputStream &is) {
+    if(!is.OpenEntry(*entry)) return false;
+    if(!is.Read(*this)) return false;
+    return true;
+}
+
+bool WDEdWADOutputStream::CopyArchiveMetaData(wxArchiveInputStream &is) {
+    WDEdWADInputStream *wis = dynamic_cast<WDEdWADInputStream *>(&is);
+    if(wis) {
+        wxFileOffset ofs = m_parent_o_stream->TellO();
+        m_parent_o_stream->SeekO(0, wxFromStart);
+        m_parent_o_stream->WriteAll((const char *) wis->GetWadType().c_str(), 4);
+        return true;
+    }
+    return false;
+}
+
 
 WDEdWADEntry::WDEdWADEntry() : wxArchiveEntry::wxArchiveEntry() {}
 

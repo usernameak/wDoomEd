@@ -18,4 +18,6 @@ public:
     void KeyDown(wxKeyEvent &event);
 protected:
     DECLARE_EVENT_TABLE()
+private:
+    wxPoint convertCoordsScreenToWorld(wxPoint&);
 };

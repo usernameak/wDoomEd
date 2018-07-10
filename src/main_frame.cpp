@@ -51,10 +51,10 @@ void WDEdMainFrame::ChangeTool(wxCommandEvent &event) {
     int id = event.GetId();
     switch(id) {
         case ID_TOOL_VERTS:
-            WDEdMapEditor::currentTool = WDEdMapEditor::WDED_ME_TOOL_VERTS;
+            WDEdMapEditor::SetTool(WDEdMapEditor::WDED_ME_TOOL_VERTS);
         break;
         case ID_TOOL_LINEDEFS:
-            WDEdMapEditor::currentTool = WDEdMapEditor::WDED_ME_TOOL_LINES;
+            WDEdMapEditor::SetTool(WDEdMapEditor::WDED_ME_TOOL_LINES);
         break;
     }
     canvas->Refresh();

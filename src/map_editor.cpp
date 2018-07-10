@@ -6,25 +6,28 @@
 
 using namespace WDEdMapEditor;
 
+WDEdMapEditorDragType WDEdMapEditor::dragging = WDED_DRAG_NONE;
+WDEdAnyElement WDEdMapEditor::draggingElement = {(void*)nullptr};
+int WDEdMapEditor::mousePrevX, WDEdMapEditor::mousePrevY;
+
+float WDEdMapEditor::offsetX = 0, WDEdMapEditor::offsetY = 0;
+int WDEdMapEditor::gridSize = 64;
+float WDEdMapEditor::scale = 1.0f;
+
+WDEdAnyElement WDEdMapEditor::hoveredElement = {(void*)nullptr};
+WDEdMapEditorTool WDEdMapEditor::currentTool = WDED_ME_TOOL_VERTS;
+
+int WDEdMapEditor::pointedX = 0, WDEdMapEditor::pointedY = 0;
+
 bool WDEdMapEditor::mapIsCurrentlyLoaded = false;
 wxVector<LineDef> WDEdMapEditor::mapLinedefs;
 wxVector<Vertex> WDEdMapEditor::mapVertexes;
 
-bool WDEdMapEditor::dragging = false;
-float WDEdMapEditor::offsetX = 0, WDEdMapEditor::offsetY = 0;
-int WDEdMapEditor::mousePrevX, WDEdMapEditor::mousePrevY;
-int WDEdMapEditor::gridSize = 64;
-float WDEdMapEditor::scale = 1.0f;
-LineDef *WDEdMapEditor::hoveredLinedef = nullptr;
-Vertex *WDEdMapEditor::hoveredVertex = nullptr;
-WDEdMapEditorTool WDEdMapEditor::currentTool = WDED_ME_TOOL_VERTS;
-
-
-int WDEdMapEditor::pointedX = 0, WDEdMapEditor::pointedY = 0;
+wxString ioTemporaryWadFile = wxFileName::CreateTempFileName("wDoomEd_");
 
 void WDEdMapEditor::OpenArchive(wxString source) {
     mapIsCurrentlyLoaded = false;
-    hoveredLinedef = nullptr;
+    hoveredElement.elem = nullptr;
     WDEdWADInputStream wis(new wxFileInputStream(source));
     while(wxArchiveEntry *entry = wis.GetNextEntry()) {
         if(entry->GetName().IsSameAs("MAP01")) {
@@ -59,4 +62,23 @@ void WDEdMapEditor::OpenArchive(wxString source) {
             break;
         }
     }
+    if(mapIsCurrentlyLoaded) wxCopyFile(source, ioTemporaryWadFile);
+}
+
+void WDEdMapEditor::SaveArchive(wxString target) {
+    if(!mapIsCurrentlyLoaded) return;
+    
+    WDEdWADInputStream wis(new wxFileInputStream(ioTemporaryWadFile));
+    WDEdWADOutputStream wos(new wxFileOutputStream(target), wis.GetWadType());
+}
+
+void WDEdMapEditor::SetTool(WDEdMapEditorTool tool) {
+    hoveredElement.elem = nullptr;
+    draggingElement.elem = nullptr;
+    dragging = WDED_DRAG_NONE;
+    currentTool = tool;
+}
+
+bool WDEdMapEditor::IsElementHighlighted(const WDEdAnyElement &elem) {
+    return (dragging == WDED_DRAG_NONE && elem.elem == hoveredElement.elem) || elem.elem == draggingElement.elem;
 }
