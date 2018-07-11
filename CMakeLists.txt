@@ -7,13 +7,17 @@ add_executable(wDoomEd
     src/main_frame.cpp
     src/canvas.cpp
     src/wad.cpp
-    src/map_editor.cpp)
+    src/map_editor.cpp
+    src/properties_dialog.cpp
+    src/polygon_2d.cpp
+    src/math_util.cpp
+    src/texture.cpp)
 
 find_package(wxWidgets COMPONENTS gl core base)
     
 include(${wxWidgets_USE_FILE})
 
-target_link_libraries(wDoomEd ${wxWidgets_LIBRARIES} GL GLU)
+target_link_libraries(wDoomEd ${wxWidgets_LIBRARIES} GL GLU GLEW)
 
 set_target_properties(wDoomEd
     PROPERTIES

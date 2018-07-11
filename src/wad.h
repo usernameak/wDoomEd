@@ -4,6 +4,8 @@
 #include <wx/archive.h>
 #include <stdint.h>
 
+#include <vector>
+
 struct WDEdWADEntryDesc {
     uint32_t lumpPointer;
     uint32_t lumpSize;
@@ -78,7 +80,7 @@ public:
 
 class WDEdWADOutputStream : public wxArchiveOutputStream {
         size_t m_last_write;
-        wxVector<WDEdWADEntry> entries;
+        std::vector<WDEdWADEntry> entries;
         WDEdWADEntry *currentEntry = nullptr;
     public:
         WDEdWADOutputStream(wxOutputStream *, wxString wadType);

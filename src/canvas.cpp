@@ -2,6 +2,7 @@
 
 #include "map_editor.h"
 #include "app.h"
+#include "properties_dialog.h"
 
 #include <cmath>
 #include <climits>
@@ -37,88 +38,126 @@ void WDEdMainCanvas::Render(wxPaintEvent& WXUNUSED(event)) {
         glTranslatef(offsetX, -offsetY, 0.0f);
         glScalef(scale, scale, scale);
 
-        glColor4f(0.2, 0.2, 0.2, 1.0);
-
-        glBegin(GL_LINES);
-
-            int step = gridSize;
-            float initialX = -GetSize().x * 0.5 / scale - offsetX / scale;
-            initialX = initialX - fmod(initialX, step) - step;
-            float finalX = GetSize().x * 0.5 / scale - offsetX / scale;
-            float initialY = -GetSize().y * 0.5 / scale + offsetY / scale;
-            initialY = initialY - fmod(initialY, step) - step;
-            float finalY = GetSize().y * 0.5 / scale + offsetY / scale;
-            for(float x = initialX; x < finalX; x += step) {
-                if(x == pointedX) {
-                    glColor4f(0.4, 0.4, 0.4, 1.0);
-                }
-                glVertex2f(x, initialY);
-                glVertex2f(x, finalY);
-                if(x == pointedX) {
-                    glColor4f(0.2, 0.2, 0.2, 1.0);
-                }
-            }
-            for(float y = initialY; y < finalY; y += step) {
-                if(y == pointedY) {
-                    glColor4f(0.4, 0.4, 0.4, 1.0);
-                }
-                glVertex2f(initialX, y);
-                glVertex2f(finalX, y);
-                if(y == pointedY) {
-                    glColor4f(0.2, 0.2, 0.2, 1.0);
-                }
-            }
-        glEnd();
-
-        glLoadIdentity();
-        glTranslatef(offsetX, -offsetY, 0.0f);
-        glScalef(scale, scale, scale);
-
-
-        glColor4f(1.0, 1.0, 1.0, 1.0);
-
-        glBegin(GL_LINES);
-        for(wxVector<WDEdMapEditor::LineDef>::iterator it = WDEdMapEditor::mapLinedefs.begin();
-            it != WDEdMapEditor::mapLinedefs.end();
-            ++it) {
-                if(IsElementHighlighted(&*it)) {
-                    glColor4f(1.0, 0.6, 0.0, 1.0);
-                }
-                glVertex2i(WDEdMapEditor::mapVertexes[it->beginVertex].x, WDEdMapEditor::mapVertexes[it->beginVertex].y);
-                glVertex2i(WDEdMapEditor::mapVertexes[it->endVertex].x, WDEdMapEditor::mapVertexes[it->endVertex].y);
-                if(IsElementHighlighted(&*it)) {
-                    glColor4f(1.0, 1.0, 1.0, 1.0);
-                }
-        }
-        glEnd();
-
-        glLoadIdentity();
-        glTranslatef(offsetX, -offsetY, 0.0f);
+        RenderSectors();
+        RenderGrid();
+        RenderLines();
 
         if(WDEdMapEditor::currentTool == WDED_ME_TOOL_VERTS) {
-            glBegin(GL_QUADS);
-            for(wxVector<WDEdMapEditor::Vertex>::iterator it = WDEdMapEditor::mapVertexes.begin();
-            it != WDEdMapEditor::mapVertexes.end();
-            ++it) {
-                if(IsElementHighlighted(&*it)) {
-                    glColor4f(1.0, 0.6, 0.0, 1.0);
-                }
-                glVertex2i(it->x * scale - 2, it->y * scale - 2);
-                glVertex2i(it->x * scale - 2, it->y * scale + 2);
-                glVertex2i(it->x * scale + 2, it->y * scale + 2);
-                glVertex2i(it->x * scale + 2, it->y * scale - 2);
-                if(IsElementHighlighted(&*it)) {
-                    glColor4f(1.0, 1.0, 1.0, 1.0);
-                }
-            }
-            glEnd();
+            glLoadIdentity();
+            glTranslatef(offsetX, -offsetY, 0.0f);
+            RenderVertices();
         }
-    }
-
-    
+    }    
 
     glFlush();
     SwapBuffers();
+}
+
+void WDEdMainCanvas::RenderSectors() {
+    for(std::vector<WDEdMapEditor::Sector>::iterator it = WDEdMapEditor::mapSectors.begin();
+        it != WDEdMapEditor::mapSectors.end();
+        ++it) {
+        glColor4f(it->lightLevel / 256.0f, it->lightLevel / 256.0f, it->lightLevel / 256.0f, 1.0);
+
+        WDEdTexture2D *tex = it->floorTex();
+        if(tex) {
+            glEnable(GL_TEXTURE_2D);
+            tex->Bind(ctx);
+        }
+
+        glBegin(GL_TRIANGLES);
+        for (int i = 0; i < it->nTriangles; i++) {
+            if(tex) {
+                glTexCoord2f(it->triangles[i].x / tex->img->GetWidth(), it->triangles[i].y / tex->img->GetHeight());
+            }
+            glVertex2f(it->triangles[i].x, it->triangles[i].y);
+        }
+        glEnd();
+
+        if(tex) {
+            glDisable(GL_TEXTURE_2D);
+        }
+
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+}
+
+void WDEdMainCanvas::RenderGrid() {
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glColor4f(1.0, 1.0, 1.0, 0.2);
+
+    glBegin(GL_LINES);
+        int step = gridSize;
+        float initialX = -GetSize().x * 0.5 / scale - offsetX / scale;
+        initialX = initialX - fmod(initialX, step) - step;
+        float finalX = GetSize().x * 0.5 / scale - offsetX / scale;
+        float initialY = -GetSize().y * 0.5 / scale + offsetY / scale;
+        initialY = initialY - fmod(initialY, step) - step;
+        float finalY = GetSize().y * 0.5 / scale + offsetY / scale;
+        for(float x = initialX; x < finalX; x += step) {
+            if(x == pointedX) {
+                glColor4f(1.0, 1.0, 1.0, 0.4);
+            }
+            glVertex2f(x, initialY);
+            glVertex2f(x, finalY);
+            if(x == pointedX) {
+                glColor4f(1.0, 1.0, 1.0, 0.2);
+            }
+        }
+        for(float y = initialY; y < finalY; y += step) {
+            if(y == pointedY) {
+                glColor4f(1.0, 1.0, 1.0, 0.4);
+            }
+            glVertex2f(initialX, y);
+            glVertex2f(finalX, y);
+            if(y == pointedY) {
+                glColor4f(1.0, 1.0, 1.0, 0.2);
+            }
+        }
+    glEnd();
+
+    glDisable(GL_BLEND);
+}
+
+void WDEdMainCanvas::RenderLines() {
+    glColor4f(1.0, 1.0, 1.0, 1.0);
+
+    glBegin(GL_LINES);
+    for(std::vector<WDEdMapEditor::LineDef>::iterator it = WDEdMapEditor::mapLinedefs.begin();
+        it != WDEdMapEditor::mapLinedefs.end();
+        ++it) {
+            if(IsElementHighlighted(&*it)) {
+                glColor4f(1.0, 0.6, 0.0, 1.0);
+            } else if(!(it->flags & WDED_LINEFLAG_IMPASSABLE)) {
+                glColor4f(0.6, 0.6, 0.6, 1.0);
+            }
+            glVertex2i(WDEdMapEditor::mapVertexes[it->beginVertex].x, WDEdMapEditor::mapVertexes[it->beginVertex].y);
+            glVertex2i(WDEdMapEditor::mapVertexes[it->endVertex].x, WDEdMapEditor::mapVertexes[it->endVertex].y);
+            if(IsElementHighlighted(&*it) || !(it->flags & WDED_LINEFLAG_IMPASSABLE)) {
+                glColor4f(1.0, 1.0, 1.0, 1.0);
+            }
+    }
+    glEnd();
+}
+
+void WDEdMainCanvas::RenderVertices() {
+    glBegin(GL_QUADS);
+        for(std::vector<WDEdMapEditor::Vertex>::iterator it = WDEdMapEditor::mapVertexes.begin();
+        it != WDEdMapEditor::mapVertexes.end();
+        ++it) {
+            if(IsElementHighlighted(&*it)) {
+                glColor4f(1.0, 0.6, 0.0, 1.0);
+            }
+            glVertex2i(it->x * scale - 2, it->y * scale - 2);
+            glVertex2i(it->x * scale - 2, it->y * scale + 2);
+            glVertex2i(it->x * scale + 2, it->y * scale + 2);
+            glVertex2i(it->x * scale + 2, it->y * scale - 2);
+            if(IsElementHighlighted(&*it)) {
+                glColor4f(1.0, 1.0, 1.0, 1.0);
+            }
+        }
+    glEnd();
 }
 
 wxPoint WDEdMainCanvas::convertCoordsScreenToWorld(wxPoint &pos) {
@@ -139,8 +178,7 @@ void WDEdMainCanvas::StartDragging(wxMouseEvent& event) {
         CaptureMouse();
         wxSetCursor(wxCURSOR_SIZING);
         dragging = WDED_DRAG_MOVESCREEN;
-    } else if(event.Button(wxMOUSE_BTN_LEFT)) {
-        
+    } else if(event.Button(wxMOUSE_BTN_LEFT)) {   
         CaptureMouse();
         dragging = WDED_DRAG_MOVEELEM;
         draggingElement = hoveredElement;
@@ -169,7 +207,7 @@ void WDEdMainCanvas::Drag(wxMouseEvent& event) {
         mousePrevY = mouseOnScreen.y;
         Refresh();
         Update();
-    } else if(dragging == WDED_DRAG_MOVEELEM) {
+    } else if(dragging == WDED_DRAG_MOVEELEM && draggingElement.elem) {
         wxPoint pos = event.GetPosition();
         wxPoint wpos = convertCoordsScreenToWorld(pos);
         pointedX = round((double)wpos.x / gridSize) * gridSize;
@@ -225,7 +263,7 @@ void WDEdMainCanvas::MouseMove(wxMouseEvent& event) {
     if(currentTool == WDED_ME_TOOL_LINES) {
         LineDef *leastLine = nullptr;
         double leastDist = INFINITY;
-        for(wxVector<WDEdMapEditor::LineDef>::iterator it = WDEdMapEditor::mapLinedefs.begin();
+        for(std::vector<WDEdMapEditor::LineDef>::iterator it = WDEdMapEditor::mapLinedefs.begin();
                 it != WDEdMapEditor::mapLinedefs.end();
                 ++it) {
                 Vertex beginVert = mapVertexes[it->beginVertex];
@@ -244,7 +282,7 @@ void WDEdMainCanvas::MouseMove(wxMouseEvent& event) {
     } else if(currentTool == WDED_ME_TOOL_VERTS) {
         Vertex *leastVert = nullptr;
         double leastDist = INFINITY;
-        for(wxVector<WDEdMapEditor::Vertex>::iterator it = WDEdMapEditor::mapVertexes.begin();
+        for(std::vector<WDEdMapEditor::Vertex>::iterator it = WDEdMapEditor::mapVertexes.begin();
             it != WDEdMapEditor::mapVertexes.end();
             ++it) {
                 double dist = distance(it->x, it->y, wpos.x, wpos.y);
@@ -303,6 +341,16 @@ void WDEdMainCanvas::MouseLeftDown(wxMouseEvent& event) {
     event.Skip();
 }
 
+void WDEdMainCanvas::OpenPropertiesMenu(wxMouseEvent& event) {
+    if(hoveredElement.elem) {
+        WDEdPropertiesDialog dlg(wxGetApp().frame, currentTool, hoveredElement);
+        if(dlg.ShowModal() == wxID_OK) {
+            Refresh();
+            Update();
+        }
+    }
+}
+
 BEGIN_EVENT_TABLE(WDEdMainCanvas, wxGLCanvas)
     EVT_PAINT (WDEdMainCanvas::Render)
     EVT_LEFT_DOWN (WDEdMainCanvas::StartDragging)
@@ -312,5 +360,6 @@ BEGIN_EVENT_TABLE(WDEdMainCanvas, wxGLCanvas)
     EVT_MOTION (WDEdMainCanvas::MouseMove)
     EVT_MIDDLE_UP (WDEdMainCanvas::EndDragging)
     EVT_LEFT_UP (WDEdMainCanvas::EndDragging)
+    EVT_RIGHT_UP (WDEdMainCanvas::OpenPropertiesMenu)
     EVT_KEY_DOWN (WDEdMainCanvas::KeyDown)
 END_EVENT_TABLE()

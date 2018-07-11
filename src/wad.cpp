@@ -163,7 +163,7 @@ bool WDEdWADOutputStream::Close() {
 
     m_parent_o_stream->SeekO(0, wxFromEnd);
 
-    for(wxVector<WDEdWADEntry>::iterator it = entries.begin();
+    for(std::vector<WDEdWADEntry>::iterator it = entries.begin();
             it != entries.end();
             ++it) {
                 m_parent_o_stream->WriteAll((const char *) &it->GetDesc(), sizeof(WDEdWADEntryDesc));

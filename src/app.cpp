@@ -5,6 +5,8 @@
 #include "main_frame.h"
 
 bool WDEdApp::OnInit() {
+    glewInit();
+    wxImage::AddHandler(flatHandler = new WDEdDoomFlatHandler);
     wxInitAllImageHandlers();
     new WDEdMainFrame();
     frame->Maximize();
