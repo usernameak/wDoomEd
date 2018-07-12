@@ -343,7 +343,33 @@ void WDEdMainCanvas::MouseLeftDown(wxMouseEvent& event) {
 
 void WDEdMainCanvas::OpenPropertiesMenu(wxMouseEvent& event) {
     if(hoveredElement.elem) {
-        WDEdPropertiesDialog dlg(wxGetApp().frame, currentTool, hoveredElement);
+        WDEdPropertiesDialog dlg(wxGetApp().frame);
+        switch(currentTool) {
+            case WDED_ME_TOOL_VERTS:
+                dlg.AddGroup("Position");
+                dlg.AddNumberField<int16_t>("X coordinate", &hoveredElement.vertex->x);
+                dlg.AddNumberField<int16_t>("Y coordinate", &hoveredElement.vertex->y);
+            break;
+            case WDED_ME_TOOL_LINES:
+                dlg.AddBitCheckboxGroup<uint16_t>("Flags", &hoveredElement.line->flags, 
+                    {
+                        {"Impassable", 0x0001},
+                        {"Block monsters", 0x0002},
+                        {"Two sided", 0x0004},
+                        {"Upper unpegged", 0x0008},
+                        {"Lower unpegged", 0x0010},
+                        {"Secret", 0x0020},
+                        {"Block sound", 0x0040},
+                        {"Not on automap", 0x0080},
+                        {"Always on automap", 0x0100},
+                    }
+                );
+                dlg.AddGroup("Special");
+                dlg.AddNumberField<uint16_t>("Line special", &hoveredElement.line->linetype);
+                dlg.AddNumberField<uint16_t>("Special tag", &hoveredElement.line->arg0);
+            break;
+        }
+        dlg.Finish();
         if(dlg.ShowModal() == wxID_OK) {
             Refresh();
             Update();

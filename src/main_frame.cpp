@@ -4,6 +4,8 @@
 #include "map_editor.h"
 #include "app.h"
 
+#include <wx/stdpaths.h>
+
 WDEdMainFrame::WDEdMainFrame() : wxFrame::wxFrame(nullptr, wxID_ANY, "wDoomEd") {
     wxGetApp().frame = this;
 
