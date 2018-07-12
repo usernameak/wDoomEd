@@ -71,7 +71,6 @@ public:
         for(auto &prop : props) {
 
             WDEdCBBitValidator<T> valid = WDEdCBBitValidator<T>(value, prop.bitmask);
-            valid.TransferToWindow();
             sizer->Add(new wxCheckBox(panel,
                                       wxID_ANY,
                                       prop.name,
