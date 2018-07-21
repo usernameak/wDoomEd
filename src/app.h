@@ -12,6 +12,7 @@ public:
     WDEdMainFrame *frame;
     virtual bool OnInit();
     WDEdDoomFlatHandler *flatHandler;
+    WDEdDoomPatchHandler *patchHandler;
 };
 
 wxDECLARE_APP(WDEdApp);

@@ -2,8 +2,8 @@
 
 using namespace WDEdMapEditor;
 
-WDEdPropertiesDialog::WDEdPropertiesDialog(wxWindow *parent) : wxDialog(parent, wxID_ANY, "Properties") {
-    //sizer = new wxGridBagSizer(10, 10);
+WDEdPropertiesDialog::WDEdPropertiesDialog(wxWindow *parent) : wxDialog(parent, wxID_ANY, "Properties") { // @suppress("Class members should be properly initialized")
+    SetExtraStyle(GetExtraStyle() | wxWS_EX_VALIDATE_RECURSIVELY);
     rootSizer = new wxBoxSizer(wxVERTICAL);
     SetSizer(rootSizer);
 }

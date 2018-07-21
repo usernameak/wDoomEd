@@ -7,6 +7,7 @@
 bool WDEdApp::OnInit() {
     glewInit();
     wxImage::AddHandler(flatHandler = new WDEdDoomFlatHandler);
+    patchHandler = new WDEdDoomPatchHandler;
     wxInitAllImageHandlers();
     new WDEdMainFrame();
     frame->Maximize();

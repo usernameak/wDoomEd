@@ -11,6 +11,8 @@
 
 using namespace WDEdMapEditor;
 
+// extern WDEdTexture2D *testPatchTex;
+
 WDEdMainCanvas::WDEdMainCanvas(wxWindow *parent) : wxGLCanvas::wxGLCanvas(parent, wxID_ANY, nullptr) {
     ctx = new wxGLContext(this);
     wxGetApp().frame->GetStatusBar()->SetStatusText(wxString::Format("Grid: %dx%d", gridSize, gridSize), WDED_SB_EL_GRID);
@@ -47,7 +49,24 @@ void WDEdMainCanvas::Render(wxPaintEvent& WXUNUSED(event)) {
             glTranslatef(offsetX, -offsetY, 0.0f);
             RenderVertices();
         }
-    }    
+    }
+
+    /*if(testPatchTex) {
+    	glEnable(GL_TEXTURE_2D);
+    	glEnable(GL_ALPHA_TEST);
+    	glAlphaFunc(GL_GREATER, 0.5f);
+    	testPatchTex->Bind(ctx);
+    	glColor3f(1.0f, 1.0f, 1.0f);
+        glLoadIdentity();
+        glBegin(GL_QUADS);
+			glTexCoord2i(0, 0); glVertex2i(0, 0);
+			glTexCoord2i(1, 0); glVertex2i(64, 0);
+			glTexCoord2i(1, 1); glVertex2i(64, 128);
+			glTexCoord2i(0, 1); glVertex2i(0, 128);
+        glEnd();
+        glDisable(GL_TEXTURE_2D);
+    	glDisable(GL_ALPHA_TEST);
+    }*/
 
     glFlush();
     SwapBuffers();
@@ -68,7 +87,7 @@ void WDEdMainCanvas::RenderSectors() {
         glBegin(GL_TRIANGLES);
         for (int i = 0; i < it->nTriangles; i++) {
             if(tex) {
-                glTexCoord2f(it->triangles[i].x / tex->img->GetWidth(), it->triangles[i].y / tex->img->GetHeight());
+                glTexCoord2f(it->triangles[i].x / tex->imageWidth, it->triangles[i].y / tex->imageHeight);
             }
             glVertex2f(it->triangles[i].x, it->triangles[i].y);
         }

@@ -90,9 +90,7 @@ public:
 	bool	buildSubPoly(int edge_start, Polygon2D* poly);
 	bool	doSplitting(PolygonGroup2D* poly);
 
-	// Testing
 	void	openSector(WDEdMapEditor::Sector* sector);
-	void	testRender();
 };
 
 #endif//__POLYGON_2D_H__

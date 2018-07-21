@@ -69,13 +69,11 @@ public:
         int i = 0;
         int j = sizer->GetRows();
         for(auto &prop : props) {
-
-            WDEdCBBitValidator<T> valid = WDEdCBBitValidator<T>(value, prop.bitmask);
             sizer->Add(new wxCheckBox(panel,
                                       wxID_ANY,
                                       prop.name,
                                       wxDefaultPosition, wxDefaultSize,
-                                      0L, valid
+                                      0L, WDEdCBBitValidator<T>(value, prop.bitmask)
                                      ), wxGBPosition(j, i++));
             if(i != i % 4) {
                 j++;
@@ -84,5 +82,16 @@ public:
         }
         return this;
     }
+    /*WDEdPropertiesDialog *AddTextureBox(wxString name, char (*value)[8]) {
+    	char valueStr[9] = {0};
+    	strncpy(valueStr, (const char *) value, 8);
+		sizer->Add(new wxBitmapButton(panel,
+								  wxID_ANY,
+								  prop.name,
+								  wxDefaultPosition, wxDefaultSize,
+								  0L, WDEdCBBitValidator<T>(value, prop.bitmask)
+								 ), wxGBPosition(j, i++));
+		return this;
+	}*/
     WDEdPropertiesDialog *Finish();
 };

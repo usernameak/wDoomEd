@@ -5,7 +5,7 @@
 
 #include "texture.h"
 
-#include "wad.h"
+// #include "wad.h"
 
 #include <vector>
 
@@ -65,6 +65,7 @@ namespace WDEdMapEditor {
     struct SideDef;
 
     extern std::map<wxString, WDEdTexture2D *> wadTextures;
+    extern std::map<wxString, wxImage *> wadPatches;
 
     struct Sector : public DoomSector {
         private:

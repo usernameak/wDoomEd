@@ -42,11 +42,11 @@ void PolygonGroup2D::triangulate(WDEdMathUtil::Point *points) {
 PolygonGroup2D::~PolygonGroup2D() {
 	for(int i = 0; i < nSubPolys(); i++) {
 		Polygon2D *subPoly = getSubPoly(i);
-		delete subPoly->vertices;
+		delete[] subPoly->vertices;
 	}
 }
 
-PolygonSplitter::PolygonSplitter()
+PolygonSplitter::PolygonSplitter() // @suppress("Class members should be properly initialized")
 {
 	verbose = false;
 }
@@ -789,35 +789,4 @@ void PolygonSplitter::openSector(Sector* sector)
 		else
 			addEdge(line->v2()->x, line->v2()->y, line->v1()->x, line->v1()->y);
 	}
-}
-
-void PolygonSplitter::testRender()
-{
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	// Draw vertices
-	glColor3f(1.0f, 1.0f, 1.0f);
-	glBegin(GL_POINTS);
-	for (unsigned a = 0; a < vertices.size(); a++)
-		glVertex2d(vertices[a].x, vertices[a].y);
-	glEnd();
-
-	// Draw original edges
-	glColor3f(0.0f, 0.0f, 1.0f);
-	glBegin(GL_LINES);
-	for (int a = 0; a < split_edges_start; a++)
-	{
-		glVertex2d(vertices[edges[a].v1].x, vertices[edges[a].v1].y);
-		glVertex2d(vertices[edges[a].v2].x, vertices[edges[a].v2].y);
-	}
-	glEnd();
-
-	// Draw split edges
-	glColor3f(0.0f, 1.0f, 0.0f);
-	glBegin(GL_LINES);
-	for (unsigned a = split_edges_start; a < edges.size(); a++)
-	{
-		glVertex2d(vertices[edges[a].v1].x, vertices[edges[a].v1].y);
-		glVertex2d(vertices[edges[a].v2].x, vertices[edges[a].v2].y);
-	}
-	glEnd();
 }
