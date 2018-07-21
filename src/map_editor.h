@@ -56,6 +56,8 @@ namespace WDEdMapEditor {
     };
 
     struct Vertex {
+    	inline Vertex() {}
+    	inline Vertex(int16_t x, int16_t y) : x(x), y(y) {}
         int16_t x;
         int16_t y;
     };
