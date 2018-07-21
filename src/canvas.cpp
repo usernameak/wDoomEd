@@ -13,8 +13,8 @@ using namespace WDEdMapEditor;
 
 // extern WDEdTexture2D *testPatchTex;
 
-WDEdMainCanvas::WDEdMainCanvas(wxWindow *parent) :
-		wxGLCanvas::wxGLCanvas(parent, wxID_ANY, nullptr) {
+WDEdMainCanvas::WDEdMainCanvas(wxWindow *parent, const int *attribs) :
+		wxGLCanvas::wxGLCanvas(parent, wxID_ANY, attribs) {
 	ctx = new wxGLContext(this);
 	wxGetApp().frame->GetStatusBar()->SetStatusText(
 			wxString::Format("Grid: %dx%d", gridSize, gridSize),
@@ -48,7 +48,7 @@ void WDEdMainCanvas::Render(wxPaintEvent& WXUNUSED(event)) {
 		RenderGrid();
 		RenderLines();
 
-		if (WDEdMapEditor::currentTool == WDED_ME_TOOL_VERTS) {
+		if (WDEdMapEditor::currentTool == WDED_ME_TOOL_VERTS || (WDEdMapEditor::currentTool == WDED_ME_TOOL_LINES && wxGetKeyState(WXK_SHIFT))) {
 			glLoadIdentity();
 			glTranslatef(offsetX, -offsetY, 0.0f);
 			RenderVertices();
@@ -157,10 +157,30 @@ void WDEdMainCanvas::RenderLines() {
 		} else if (!(it->flags & WDED_LINEFLAG_IMPASSABLE)) {
 			glColor4f(0.6, 0.6, 0.6, 1.0);
 		}
+		int x1 = WDEdMapEditor::mapVertexes[it->beginVertex].x;
+		int y1 = WDEdMapEditor::mapVertexes[it->beginVertex].y;
+		int x2 = WDEdMapEditor::mapVertexes[it->endVertex].x;
+		int y2 = WDEdMapEditor::mapVertexes[it->endVertex].y;
+
 		glVertex2i(WDEdMapEditor::mapVertexes[it->beginVertex].x,
 				WDEdMapEditor::mapVertexes[it->beginVertex].y);
 		glVertex2i(WDEdMapEditor::mapVertexes[it->endVertex].x,
 				WDEdMapEditor::mapVertexes[it->endVertex].y);
+		float dx = x2 - x1;
+		float dy = y2 - y1;
+		int cx = (x1 + x2) / 2;
+		int cy = (y1 + y2) / 2;
+		float len = sqrt(dx * dx + dy * dy);
+		if(len == 0) {
+			dx = dy = 0;
+		} else {
+			dx /= len;
+			dy /= len;
+		}
+		dx *= 5;
+		dy *= 5;
+		glVertex2i(cx, cy);
+		glVertex2f(cx + dy, cy - dx);
 		if (IsElementHighlighted(&*it)
 				|| !(it->flags & WDED_LINEFLAG_IMPASSABLE)) {
 			glColor4f(1.0, 1.0, 1.0, 1.0);
@@ -216,11 +236,30 @@ void WDEdMainCanvas::StartDragging(wxMouseEvent& event) {
 				mapVertexes.push_back(Vertex(pointedX, pointedY));
 				hoveredElement = &mapVertexes.back();
 				break;
+			case WDED_ME_TOOL_LINES:
+				LineDef line;
+				mapVertexes.push_back(Vertex(pointedX, pointedY));
+				line.beginVertex = mapVertexes.size() - 1;
+				mapVertexes.push_back(Vertex(pointedX, pointedY));
+				line.endVertex = mapVertexes.size() - 1;
+				line.flags = 1;
+				line.linetype = 0;
+				line.arg0 = 0;
+				line.frontSide = mapSidedefs.size();
+				line.backSide = 0xFFFF;
+				mapLinedefs.push_back(line);
+				mapSidedefs.push_back(SideDef(&mapLinedefs.back()));
+				dragging = WDED_DRAG_DRAWLINE;
+				draggingElement.line = &mapLinedefs.back();
+				goto getout;
+				break;
 			}
-			Refresh(); Update();
 		}
 		draggingElement = hoveredElement;
 	}
+	getout:;
+
+	Refresh(); Update();
 
 	wxPoint mouseOnScreen = wxGetMousePosition();
 	mousePrevX = mouseOnScreen.x;
@@ -259,6 +298,14 @@ void WDEdMainCanvas::Drag(wxMouseEvent& event) {
 
 			break;
 		}
+	} else if (dragging == WDED_DRAG_DRAWLINE) {
+		wxPoint pos = event.GetPosition();
+		wxPoint wpos = convertCoordsScreenToWorld(pos);
+		pointedX = round((double) wpos.x / gridSize) * gridSize;
+		pointedY = round((double) wpos.y / gridSize) * gridSize;
+		mapVertexes[draggingElement.line->endVertex].x = pointedX;
+		mapVertexes[draggingElement.line->endVertex].y = pointedY;
+		// TODO: closing drawn lines
 	}
 	event.Skip();
 }
@@ -323,7 +370,8 @@ void WDEdMainCanvas::MouseMove(wxMouseEvent& event) {
 		if (hoveredElement.line != leastLine) {
 			hoveredElement.line = leastLine;
 		}
-	} else if (currentTool == WDED_ME_TOOL_VERTS) {
+	}
+	{
 		Vertex *leastVert = nullptr;
 		double leastDist = INFINITY;
 		for (std::vector<WDEdMapEditor::Vertex>::iterator it =
@@ -337,8 +385,11 @@ void WDEdMainCanvas::MouseMove(wxMouseEvent& event) {
 		}
 		if (leastDist > 12 / scale)
 			leastVert = nullptr;
-		if (hoveredElement.vertex != leastVert) {
+		if (currentTool == WDED_ME_TOOL_VERTS && hoveredElement.vertex != leastVert) {
 			hoveredElement.vertex = leastVert;
+		}
+		if(hoveredVertex != leastVert) {
+			hoveredVertex = leastVert;
 		}
 	}
 	Refresh();
@@ -403,11 +454,16 @@ void WDEdMainCanvas::OpenPropertiesMenu(wxMouseEvent& event) {
 		case WDED_ME_TOOL_LINES:
 			dlg.AddBitCheckboxGroup<uint16_t>("Flags",
 					&hoveredElement.line->flags,
-					{ { "Impassable", 0x0001 }, { "Block monsters", 0x0002 }, {
-							"Two sided", 0x0004 }, { "Upper unpegged", 0x0008 },
-							{ "Lower unpegged", 0x0010 }, { "Secret", 0x0020 },
-							{ "Block sound", 0x0040 }, { "Not on automap",
-									0x0080 }, { "Always on automap", 0x0100 }, });
+					{ { "Impassable", 0x0001 },
+					  { "Block monsters", 0x0002 },
+					  { "Two sided", 0x0004 },
+					  { "Upper unpegged", 0x0008 },
+					  { "Lower unpegged", 0x0010 },
+					  { "Secret", 0x0020 },
+					  { "Block sound", 0x0040 },
+					  { "Not on automap", 0x0080 },
+					  { "Always on automap", 0x0100 },
+					});
 			dlg.AddGroup("Special");
 			dlg.AddNumberField<uint16_t>("Line special",
 					&hoveredElement.line->linetype);

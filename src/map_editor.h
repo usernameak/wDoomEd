@@ -11,6 +11,8 @@
 
 #include "polygon_2d.h"
 
+#include <cstring>
+
 #include <map>
 
 namespace WDEdMapEditor {
@@ -23,6 +25,7 @@ namespace WDEdMapEditor {
         WDED_DRAG_NONE,
         WDED_DRAG_MOVESCREEN,
         WDED_DRAG_MOVEELEM,
+		WDED_DRAG_DRAWLINE,
     };
 
     enum LinedefFlag {
@@ -56,7 +59,7 @@ namespace WDEdMapEditor {
     };
 
     struct Vertex {
-    	inline Vertex() {}
+    	inline Vertex() {} // @suppress("Class members should be properly initialized")
     	inline Vertex(int16_t x, int16_t y) : x(x), y(y) {}
         int16_t x;
         int16_t y;
@@ -91,6 +94,15 @@ namespace WDEdMapEditor {
     extern std::vector<Sector> mapSectors;
 
     struct SideDef : public DoomSideDef {
+    	inline SideDef(LineDef *prnt) {
+    		xOffset = 0;
+    		yOffset = 0;
+    		strncpy(upperTexture, "-", 8);
+    		strncpy(lowerTexture, "-", 8);
+    		strncpy(middleTexture, "STONE2", 8);
+    		sec = 0xFFFF;
+    		parent = prnt;
+    	}
         LineDef *parent;
         inline SideDef() : parent(nullptr) {}
         inline Sector *sector() {return &mapSectors[sec];}
@@ -126,6 +138,7 @@ namespace WDEdMapEditor {
     extern float scale;
 
     extern WDEdAnyElement hoveredElement;
+    extern Vertex *hoveredVertex;
     
     extern WDEdMapEditorTool currentTool;
 

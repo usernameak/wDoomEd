@@ -18,6 +18,7 @@ int WDEdMapEditor::gridSize = 64;
 float WDEdMapEditor::scale = 1.0f;
 
 WDEdAnyElement WDEdMapEditor::hoveredElement = { (void*) nullptr };
+Vertex *WDEdMapEditor::hoveredVertex = nullptr;
 WDEdMapEditorTool WDEdMapEditor::currentTool = WDED_ME_TOOL_VERTS;
 
 int WDEdMapEditor::pointedX = 0, WDEdMapEditor::pointedY = 0;
@@ -217,6 +218,6 @@ void WDEdMapEditor::SetTool(WDEdMapEditorTool tool) {
 }
 
 bool WDEdMapEditor::IsElementHighlighted(const WDEdAnyElement &elem) {
-	return (dragging == WDED_DRAG_NONE && elem.elem == hoveredElement.elem)
+	return (dragging == WDED_DRAG_NONE && (elem.elem == hoveredElement.elem || elem.vertex == hoveredVertex))
 			|| elem.elem == draggingElement.elem;
 }

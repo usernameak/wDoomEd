@@ -34,7 +34,16 @@ WDEdMainFrame::WDEdMainFrame() : wxFrame::wxFrame(nullptr, wxID_ANY, "wDoomEd") 
     }
     SetToolBar(toolBar);
 
-    canvas = new WDEdMainCanvas(this);
+    int attribs[] = {
+		WX_GL_RGBA,
+		WX_GL_DOUBLEBUFFER,
+		// WX_GL_SAMPLE_BUFFERS, GL_TRUE,
+		WX_GL_DEPTH_SIZE, 16,
+		WX_GL_STENCIL_SIZE, 8,
+		0, 0
+	};
+
+    canvas = new WDEdMainCanvas(this, attribs);
 }
 
 void WDEdMainFrame::Exit(wxCommandEvent & WXUNUSED(event)) {

@@ -9,7 +9,7 @@
 class WDEdMainCanvas : public wxGLCanvas {
     wxGLContext *ctx;
 public:
-    WDEdMainCanvas(wxWindow* parent);
+    WDEdMainCanvas(wxWindow* parent, const int * attribs);
     void Render(wxPaintEvent&);
     void RenderSectors();
     void RenderGrid();
