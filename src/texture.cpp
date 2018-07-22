@@ -110,7 +110,7 @@ void WDEdDoomPatchHandler::LoadFileFinal(wxImage  *image, int16_t *buf) {
             buf3[i] = 0;
         }
     }
-    delete buf;
+    delete[] buf;
     image->SetData(buf2);
     image->SetAlpha(buf3);
 }

@@ -28,6 +28,15 @@ void WDEdMainCanvas::Render(wxPaintEvent& WXUNUSED(event)) {
 	SetCurrent(*ctx);
 	wxPaintDC(this);
 
+	if(!glewInited) {
+		glewInited = true;
+		glewInit();
+	}
+
+	if(vboSectors == 0xFFFFFFFF) {
+		glGenBuffers(1, &vboSectors);
+	}
+
 	glClearColor(0.0, 0.0, 0.0, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT);
 
@@ -90,15 +99,8 @@ void WDEdMainCanvas::RenderSectors() {
 			tex->Bind(ctx);
 		}
 
-		glBegin(GL_TRIANGLES);
-		for (int i = 0; i < it->nTriangles; i++) {
-			if (tex) {
-				glTexCoord2f(it->triangles[i].x / tex->imageWidth,
-						it->triangles[i].y / tex->imageHeight);
-			}
-			glVertex2f(it->triangles[i].x, it->triangles[i].y);
-		}
-		glEnd();
+		it->group.setupVBO(vboSectors);
+		glDrawArrays(GL_TRIANGLES, 0, it->group.nTriangles * 3);
 
 		if (tex) {
 			glDisable(GL_TEXTURE_2D);
@@ -147,6 +149,7 @@ void WDEdMainCanvas::RenderGrid() {
 }
 
 void WDEdMainCanvas::RenderLines() {
+
 	glColor4f(1.0, 1.0, 1.0, 1.0);
 
 	glBegin(GL_LINES);
@@ -209,6 +212,18 @@ void WDEdMainCanvas::RenderVertices() {
 	glEnd();
 }
 
+void WDEdMainCanvas::OnMouseWheel(wxMouseEvent& event) {
+	if(event.GetWheelAxis() == wxMOUSE_WHEEL_VERTICAL) {
+		int amount = event.GetWheelRotation() / event.GetWheelDelta();
+		if(amount < 0) {
+			scale /= -amount * 2;
+		} else {
+			scale *= amount * 2;
+		}
+		Refresh(); Update();
+	}
+}
+
 wxPoint WDEdMainCanvas::convertCoordsScreenToWorld(wxPoint &pos) {
 	wxPoint ret(pos);
 	ret.x -= GetSize().x / 2;
@@ -259,6 +274,8 @@ void WDEdMainCanvas::StartDragging(wxMouseEvent& event) {
 				line.backSide = 0xFFFF;
 				mapLinedefs.push_back(line);
 				mapSidedefs.push_back(SideDef(&mapLinedefs.back()));
+				mapLinedefs.back().v1()->vertexLines.push_back(&mapLinedefs.back());
+				mapLinedefs.back().v2()->vertexLines.push_back(&mapLinedefs.back());
 				dragging = WDED_DRAG_DRAWLINE;
 				draggingElement.line = &mapLinedefs.back();
 				goto getout;
@@ -283,11 +300,12 @@ void WDEdMainCanvas::EndDragging(wxMouseEvent& event) {
 	wxSetCursor(wxCURSOR_ARROW);
 	if(dragging == WDED_DRAG_DRAWLINE) {
 		if(hoveredVertex) {
-			DeleteVertexAndShiftRefs(draggingElement.line->endVertex);
+			DeleteVertex(draggingElement.line->endVertex);
 			draggingElement.line->endVertex = std::find_if(mapVertexes.begin(), mapVertexes.end(),
 					[](const Vertex &vc){
 						return &vc == hoveredVertex;
 					}) - mapVertexes.begin();
+			draggingElement.line->v2()->vertexLines.push_back(draggingElement.line);
 		}
 	}
 	dragging = WDED_DRAG_NONE;
@@ -312,6 +330,14 @@ void WDEdMainCanvas::Drag(wxMouseEvent& event) {
 		case WDED_ME_TOOL_VERTS:
 			draggingElement.vertex->x = pointedX;
 			draggingElement.vertex->y = pointedY;
+			for(auto &line : draggingElement.vertex->vertexLines) {
+				if(line->s1() && line->s1()->sector()) {
+					line->s1()->sector()->Split();
+				}
+				if(line->s2() && line->s2()->sector()) {
+					line->s2()->sector()->Split();
+				}
+			}
 			break;
 		case WDED_ME_TOOL_LINES:
 
@@ -324,7 +350,6 @@ void WDEdMainCanvas::Drag(wxMouseEvent& event) {
 		pointedY = round((double) wpos.y / gridSize) * gridSize;
 		mapVertexes[draggingElement.line->endVertex].x = pointedX;
 		mapVertexes[draggingElement.line->endVertex].y = pointedY;
-		// TODO: closing drawn lines
 	}
 	event.Skip();
 }
@@ -448,6 +473,11 @@ void WDEdMainCanvas::KeyDown(wxKeyEvent &event) {
 		Refresh();
 		Update();
 		break;
+	case WXK_DELETE:
+
+		Refresh();
+		Update();
+		break;
 	default:
 		event.Skip();
 		break;
@@ -498,14 +528,16 @@ void WDEdMainCanvas::OpenPropertiesMenu(wxMouseEvent& event) {
 	}
 }
 
-BEGIN_EVENT_TABLE(WDEdMainCanvas, wxGLCanvas) EVT_PAINT (WDEdMainCanvas::Render)
-EVT_LEFT_DOWN (WDEdMainCanvas::StartDragging)
-EVT_MIDDLE_DOWN (WDEdMainCanvas::StartDragging)
-EVT_LEFT_DOWN (WDEdMainCanvas::MouseLeftDown)
-EVT_MOTION (WDEdMainCanvas::Drag)
-EVT_MOTION (WDEdMainCanvas::MouseMove)
-EVT_MIDDLE_UP (WDEdMainCanvas::EndDragging)
-EVT_LEFT_UP (WDEdMainCanvas::EndDragging)
-EVT_RIGHT_UP (WDEdMainCanvas::OpenPropertiesMenu)
-EVT_KEY_DOWN (WDEdMainCanvas::KeyDown)
+BEGIN_EVENT_TABLE(WDEdMainCanvas, wxGLCanvas)
+	EVT_PAINT (WDEdMainCanvas::Render)
+	EVT_LEFT_DOWN (WDEdMainCanvas::StartDragging)
+	EVT_MIDDLE_DOWN (WDEdMainCanvas::StartDragging)
+	EVT_LEFT_DOWN (WDEdMainCanvas::MouseLeftDown)
+	EVT_MOTION (WDEdMainCanvas::Drag)
+	EVT_MOTION (WDEdMainCanvas::MouseMove)
+	EVT_MIDDLE_UP (WDEdMainCanvas::EndDragging)
+	EVT_LEFT_UP (WDEdMainCanvas::EndDragging)
+	EVT_RIGHT_UP (WDEdMainCanvas::OpenPropertiesMenu)
+	EVT_KEY_DOWN (WDEdMainCanvas::KeyDown)
+	EVT_MOUSEWHEEL (WDEdMainCanvas::OnMouseWheel)
 END_EVENT_TABLE()

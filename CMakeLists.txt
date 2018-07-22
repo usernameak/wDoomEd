@@ -6,9 +6,13 @@ project("wDoomEd")
 
 set(CMAKE_CXX_STANDARD 11)
 
-#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fstack-protector")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fstack-protector")
-#set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address -fstack-protector")
+set(USE_ASAN OFF CACHE BOOL "Use ASAN")
+
+if(USE_ASAN)	
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address ")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address ")
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address ")
+endif()
 
 add_executable(wDoomEd
     src/app.cpp
@@ -25,7 +29,7 @@ find_package(wxWidgets COMPONENTS gl core base)
     
 include(${wxWidgets_USE_FILE})
 
-target_link_libraries(wDoomEd ${wxWidgets_LIBRARIES} GL GLU GLEW )
+target_link_libraries(wDoomEd ${wxWidgets_LIBRARIES} GL GLU GLEW $<$<BOOL:${USE_ASAN}>:asan>)
 
 set_target_properties(wDoomEd
     PROPERTIES

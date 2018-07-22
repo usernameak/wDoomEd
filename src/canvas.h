@@ -8,6 +8,8 @@
 
 class WDEdMainCanvas : public wxGLCanvas {
     wxGLContext *ctx;
+    GLuint vboSectors = 0xFFFFFFFF;
+    bool glewInited = false;
 public:
     WDEdMainCanvas(wxWindow* parent, const int * attribs);
     void Render(wxPaintEvent&);
@@ -23,6 +25,7 @@ public:
     void Scale(float);
     void KeyDown(wxKeyEvent &event);
     void OpenPropertiesMenu(wxMouseEvent &event);
+    void OnMouseWheel(wxMouseEvent &event);
 protected:
     DECLARE_EVENT_TABLE()
 private:

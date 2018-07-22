@@ -32,6 +32,19 @@ std::vector<Sector> WDEdMapEditor::mapSectors;
 std::map<wxString, WDEdTexture2D *> WDEdMapEditor::wadTextures;
 std::map<wxString, wxImage *> WDEdMapEditor::wadPatches;
 
+static PolygonSplitter polySplitter;
+
+static void ShiftVertexRefs(const uint16_t vertID) {
+	for(auto &it : mapLinedefs) {
+		if(it.beginVertex > vertID) {
+			it.beginVertex--;
+		}
+		if(it.endVertex > vertID) {
+			it.endVertex--;
+		}
+	}
+}
+
 // wxString ioTemporaryWadFile = wxFileName::CreateTempFileName("wDoomEd_");
 
 void WDEdMapEditor::OpenArchive(wxString source) {
@@ -72,9 +85,9 @@ void WDEdMapEditor::OpenArchive(wxString source) {
 			int lumplen = W_LumpLength(vertnum);
 			char lumpdata[lumplen];
 			W_ReadLump(vertnum, (void *) &lumpdata);
-			for (int i = 0; i < lumplen / sizeof(Vertex); i++) {
+			for (int i = 0; i < lumplen / sizeof(DoomVertex); i++) {
 				Vertex vertex;
-				vertex = ((Vertex *) &lumpdata)[i];
+				*((DoomVertex *) &vertex) = ((DoomVertex *) &lumpdata)[i];
 				mapVertexes.push_back(vertex);
 			}
 			verticesDefined = true;
@@ -179,21 +192,21 @@ void WDEdMapEditor::OpenArchive(wxString source) {
 				else
 					it->s2()->parent = &*it;
 			}
+			it->v1()->vertexLines.push_back(&*it);
+			it->v2()->vertexLines.push_back(&*it);
+		}
+		for (auto it = mapVertexes.begin(); it != mapVertexes.end();) {
+			if(it->vertexLines.empty()) {
+				ShiftVertexRefs(it - mapVertexes.begin());
+				it = mapVertexes.erase(it);
+			} else {
+				++it;
+			}
 		}
 		PolygonSplitter splitter;
 		for (std::vector<Sector>::iterator it = mapSectors.begin();
 				it != mapSectors.end(); it++) {
-			splitter.clear();
-			splitter.openSector(&*it);
-			PolygonGroup2D polyGroup;
-			if (splitter.doSplitting(&polyGroup)) {
-				it->nTriangles = polyGroup.countVertices();
-				it->triangles = new WDEdMathUtil::Point[it->nTriangles];
-				polyGroup.triangulate(it->triangles);
-			} else {
-				it->nTriangles = 0;
-			}
-
+			it->Split();
 		}
 		mapIsCurrentlyLoaded = true;
 		wxGetApp().frame->canvas->Refresh();
@@ -222,15 +235,16 @@ bool WDEdMapEditor::IsElementHighlighted(const WDEdAnyElement &elem) {
 			|| elem.elem == draggingElement.elem;
 }
 
-void WDEdMapEditor::DeleteVertexAndShiftRefs(const uint16_t vertID) {
-	for(auto &it : mapLinedefs) {
-		if(it.beginVertex > vertID) {
-			it.beginVertex--;
-		}
-		if(it.endVertex > vertID) {
-			it.endVertex--;
-		}
 
-	}
+void WDEdMapEditor::DeleteVertex(const uint16_t vertID) {
+	ShiftVertexRefs(vertID);
 	mapVertexes.erase(mapVertexes.cbegin() + vertID);
+}
+
+void WDEdMapEditor::Sector::Split() {
+	group.reset();
+	polySplitter.clear();
+	polySplitter.openSector(this);
+	polySplitter.doSplitting(&group);
+	group.setTexture(floorTex());
 }

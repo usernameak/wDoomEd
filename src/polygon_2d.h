@@ -3,6 +3,9 @@
 #define __POLYGON_2D_H__
 
 #include <vector>
+#include <wx/glcanvas.h>
+
+#include "texture.h"
 
 #include "math_util.h"
 
@@ -22,8 +25,23 @@ struct PolygonGroup2D {
 	int nSubPolys() {return subPolys.size();}
 	void removeSubPoly(int i) {subPolys.erase(subPolys.begin() + i);}
 	int countVertices();
-	void triangulate(WDEdMathUtil::Point *points);
+	inline void reset() {
+		if(triangles) {
+			delete[] triangles;
+			triangles = nullptr;
+		}
+		subPolys.clear();
+		needsUpdate = true;
+	}
+	void triangulate();
+	void setTexture(WDEdTexture2D *);
+	void setupVBO(GLuint);
 	~PolygonGroup2D();
+    int nTriangles = 0;
+private:
+	WDEdTexture2D *tex = nullptr;
+    float *triangles = nullptr;
+    bool needsUpdate = true;
 };
 
 class PolygonSplitter

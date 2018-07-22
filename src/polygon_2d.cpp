@@ -4,11 +4,14 @@
  * and licensed under GPLv2.
  */
 
+
+#include <GL/glew.h>
+#include "GL/gl.h"
+
 #include "polygon_2d.h"
 
 #include "math_util.h"
 #include "map_editor.h"
-#include "GL/gl.h"
 
 #include <algorithm>
 
@@ -26,17 +29,73 @@ int PolygonGroup2D::countVertices() {
 	return count;
 }
 
-void PolygonGroup2D::triangulate(WDEdMathUtil::Point *points) {
+void PolygonGroup2D::triangulate() {
+	nTriangles = countVertices() / 3;
+	if(triangles) {
+		delete[] triangles;
+		triangles = nullptr;
+	}
+	triangles = new float[countVertices() * 5];
 	int idx = 0;
 	for(int i = 0; i < nSubPolys(); i++) {
 		Polygon2D *subPoly = getSubPoly(i);
 		WDEdMathUtil::Point p0 = subPoly->vertices[0];
 		for(int j = 1; j < subPoly->n_vertices - 1; j++) {
-			points[idx++] = p0;
-			points[idx++] = subPoly->vertices[j];
-			points[idx++] = subPoly->vertices[j + 1];
+			WDEdMathUtil::Point p1 = subPoly->vertices[j];
+			WDEdMathUtil::Point p2 = subPoly->vertices[j + 1];
+			triangles[idx++] = p0.x;
+			triangles[idx++] = p0.y;
+			triangles[idx++] = 0.0f;
+			if(!tex) {
+				triangles[idx++] = 0.0f;
+				triangles[idx++] = 0.0f;
+			} else {
+				triangles[idx++] = p0.x / tex->imageWidth;
+				triangles[idx++] = p0.y / tex->imageHeight;
+			}
+			triangles[idx++] = p1.x;
+			triangles[idx++] = p1.y;
+			triangles[idx++] = 0.0f;
+			if(!tex) {
+				triangles[idx++] = 0.0f;
+				triangles[idx++] = 0.0f;
+			} else {
+				triangles[idx++] = p1.x / tex->imageWidth;
+				triangles[idx++] = p1.y / tex->imageHeight;
+			}
+			triangles[idx++] = p2.x;
+			triangles[idx++] = p2.y;
+			triangles[idx++] = 0.0f;
+			if(!tex) {
+				triangles[idx++] = 0.0f;
+				triangles[idx++] = 0.0f;
+			} else {
+				triangles[idx++] = p2.x / tex->imageWidth;
+				triangles[idx++] = p2.y / tex->imageHeight;
+			}
+			//triangles[idx++] = subPoly->vertices[j];
+			//triangles[idx++] = subPoly->vertices[j + 1];
 		}
 	}
+	needsUpdate = false;
+}
+
+void PolygonGroup2D::setTexture(WDEdTexture2D *tex) {
+	this->tex = tex;
+	needsUpdate = true;
+}
+
+void PolygonGroup2D::setupVBO(GLuint vbo) {
+	if(needsUpdate) {
+		triangulate();
+	}
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glVertexPointer(3, GL_FLOAT, 20, nullptr);
+	glTexCoordPointer(2, GL_FLOAT, 20, ((char*)nullptr + 12));
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	glDisableClientState(GL_COLOR_ARRAY);
+	glBufferData(GL_ARRAY_BUFFER, nTriangles * 5 * 3 * sizeof(float), triangles, GL_DYNAMIC_DRAW);
 }
 
 PolygonGroup2D::~PolygonGroup2D() {
@@ -44,6 +103,7 @@ PolygonGroup2D::~PolygonGroup2D() {
 		Polygon2D *subPoly = getSubPoly(i);
 		delete[] subPoly->vertices;
 	}
+	if(triangles) delete[] triangles;
 }
 
 PolygonSplitter::PolygonSplitter() // @suppress("Class members should be properly initialized")

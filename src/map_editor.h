@@ -58,9 +58,7 @@ namespace WDEdMapEditor {
         uint16_t backSide;
     };
 
-    struct Vertex {
-    	inline Vertex() {} // @suppress("Class members should be properly initialized")
-    	inline Vertex(int16_t x, int16_t y) : x(x), y(y) {}
+    struct DoomVertex {
         int16_t x;
         int16_t y;
     };
@@ -87,8 +85,18 @@ namespace WDEdMapEditor {
                 }
                 return wadTextures[wxString(name)];
             }
-            WDEdMathUtil::Point *triangles;
-            int nTriangles;
+            void Split();
+            PolygonGroup2D group;
+    };
+
+    struct Vertex : public DoomVertex {
+    public:
+    	std::vector<LineDef *> vertexLines;
+    	inline Vertex() {} // @suppress("Class members should be properly initialized")
+    	inline Vertex(int16_t x, int16_t y) {
+    		this->x = x;
+    		this->y = y;
+    	}
     };
 
     extern std::vector<Sector> mapSectors;
@@ -105,7 +113,7 @@ namespace WDEdMapEditor {
     	}
         LineDef *parent;
         inline SideDef() : parent(nullptr) {}
-        inline Sector *sector() {return &mapSectors[sec];}
+        inline Sector *sector() {return sec == 0xFFFF ? nullptr : &mapSectors[sec];}
     };
 
     extern std::vector<Vertex> mapVertexes;
@@ -151,5 +159,5 @@ namespace WDEdMapEditor {
     void SaveArchive(wxString target);
     void SetTool(WDEdMapEditorTool tool);
     bool IsElementHighlighted(const WDEdAnyElement &elem);
-    void DeleteVertexAndShiftRefs(const uint16_t);
+    void DeleteVertex(const uint16_t);
 }
