@@ -21,7 +21,7 @@ WDEdAnyElement WDEdMapEditor::hoveredElement = { (void*) nullptr };
 Vertex *WDEdMapEditor::hoveredVertex = nullptr;
 WDEdMapEditorTool WDEdMapEditor::currentTool = WDED_ME_TOOL_VERTS;
 
-int WDEdMapEditor::pointedX = 0, WDEdMapEditor::pointedY = 0;
+int WDEdMapEditor::pointedX = 0, WDEdMapEditor::pointedY = 0, WDEdMapEditor::rawPointedX = 0, WDEdMapEditor::rawPointedY = 0;
 
 bool WDEdMapEditor::mapIsCurrentlyLoaded = false;
 std::vector<LineDef> WDEdMapEditor::mapLinedefs;

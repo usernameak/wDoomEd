@@ -22,6 +22,31 @@ WDEdMainCanvas::WDEdMainCanvas(wxWindow *parent, const int *attribs) :
 			WDED_SB_EL_GRID);
 }
 
+static char GetLineIntersection(float p0_x, float p0_y, float p1_x, float p1_y,
+    float p2_x, float p2_y, float p3_x, float p3_y, float *i_x, float *i_y)
+{
+    float s1_x, s1_y, s2_x, s2_y;
+    s1_x = p1_x - p0_x;     s1_y = p1_y - p0_y;
+    s2_x = p3_x - p2_x;     s2_y = p3_y - p2_y;
+
+    float s, t;
+    s = (-s1_y * (p0_x - p2_x) + s1_x * (p0_y - p2_y)) / (-s2_x * s1_y + s1_x * s2_y);
+    t = ( s2_x * (p0_y - p2_y) - s2_y * (p0_x - p2_x)) / (-s2_x * s1_y + s1_x * s2_y);
+
+    if (s >= 0 && s <= 1 && t >= 0 && t <= 1)
+    {
+        // Collision detected
+        if (i_x != NULL)
+            *i_x = p0_x + (t * s1_x);
+        if (i_y != NULL)
+            *i_y = p0_y + (t * s1_y);
+        return 1;
+    }
+
+    return 0; // No collision
+}
+
+
 void WDEdMainCanvas::Render(wxPaintEvent& WXUNUSED(event)) {
 	if (scale == 0.0f)
 		scale = 1.0f;
@@ -65,23 +90,6 @@ void WDEdMainCanvas::Render(wxPaintEvent& WXUNUSED(event)) {
 		}
 	}
 
-	/*if(testPatchTex) {
-	 glEnable(GL_TEXTURE_2D);
-	 glEnable(GL_ALPHA_TEST);
-	 glAlphaFunc(GL_GREATER, 0.5f);
-	 testPatchTex->Bind(ctx);
-	 glColor3f(1.0f, 1.0f, 1.0f);
-	 glLoadIdentity();
-	 glBegin(GL_QUADS);
-	 glTexCoord2i(0, 0); glVertex2i(0, 0);
-	 glTexCoord2i(1, 0); glVertex2i(64, 0);
-	 glTexCoord2i(1, 1); glVertex2i(64, 128);
-	 glTexCoord2i(0, 1); glVertex2i(0, 128);
-	 glEnd();
-	 glDisable(GL_TEXTURE_2D);
-	 glDisable(GL_ALPHA_TEST);
-	 }*/
-
 	glFlush();
 	SwapBuffers();
 }
@@ -101,6 +109,16 @@ void WDEdMainCanvas::RenderSectors() {
 
 		it->group.setupVBO(vboSectors);
 		glDrawArrays(GL_TRIANGLES, 0, it->group.nTriangles * 3);
+		if(&*it == hoveredElement.sector) {
+			glEnable(GL_BLEND);
+			if (tex) {
+				glDisable(GL_TEXTURE_2D);
+			}
+			glColor3f(0.2f, 0.2f, 0.2f);
+			glBlendFunc(GL_ONE, GL_ONE);
+			glDrawArrays(GL_TRIANGLES, 0, it->group.nTriangles * 3);
+			glDisable(GL_BLEND);
+		}
 
 		if (tex) {
 			glDisable(GL_TEXTURE_2D);
@@ -306,6 +324,8 @@ void WDEdMainCanvas::EndDragging(wxMouseEvent& event) {
 						return &vc == hoveredVertex;
 					}) - mapVertexes.begin();
 			draggingElement.line->v2()->vertexLines.push_back(draggingElement.line);
+			Refresh();
+			Update();
 		}
 	}
 	dragging = WDED_DRAG_NONE;
@@ -389,6 +409,9 @@ void WDEdMainCanvas::MouseMove(wxMouseEvent& event) {
 	pointedX = round((double) wpos.x / gridSize) * gridSize;
 	pointedY = round((double) wpos.y / gridSize) * gridSize;
 
+	rawPointedX = wpos.x;
+	rawPointedY = wpos.y;
+
 	wxGetApp().frame->GetStatusBar()->SetStatusText(
 			wxString::Format("(%d, %d)", pointedX, pointedY),
 			WDED_SB_EL_COORDS);
@@ -434,6 +457,48 @@ void WDEdMainCanvas::MouseMove(wxMouseEvent& event) {
 		}
 		if(hoveredVertex != leastVert) {
 			hoveredVertex = leastVert;
+		}
+	}
+	{
+		if(WDEdMapEditor::currentTool == WDED_ME_TOOL_SECTORS) {
+			int x = rawPointedX;
+			int y = rawPointedY;
+			int r = 999999;
+			float x1 = x + r;
+			float y1 = y + r;
+			LineDef *leastLine = nullptr;
+			for(auto &line : mapLinedefs) {
+				int x2 = line.v1()->x;
+				int y2 = line.v1()->y;
+				int x3 = line.v2()->x;
+				int y3 = line.v2()->y;
+
+				if(GetLineIntersection(x, y, x1, y1, x2, y2, x3, y3, &x1, &y1)) {
+					leastLine = &line;
+				}
+			}
+			if(leastLine) {
+				int x2 = leastLine->v1()->x;
+				int y2 = leastLine->v1()->y;
+				int x3 = leastLine->v2()->x;
+				int y3 = leastLine->v2()->y;
+				int side = (x - x2) * (y3 - y2) - (y - y2) * (x3 - x2);
+				if(side < 0) {
+					if(leastLine->s2() && leastLine->s2()->sector()) {
+						hoveredElement.sector = leastLine->s2()->sector();
+					} else {
+						hoveredElement.sector = nullptr;
+					}
+				} else {
+					if(leastLine->s1() && leastLine->s1()->sector()) {
+						hoveredElement.sector = leastLine->s1()->sector();
+					} else {
+						hoveredElement.sector = nullptr;
+					}
+				}
+			} else {
+				hoveredElement.sector = nullptr;
+			}
 		}
 	}
 	Refresh();

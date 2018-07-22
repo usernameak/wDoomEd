@@ -9,6 +9,7 @@ enum WDEdMainFrameIDs {
     ID_FILE_OPEN = 1,
     ID_TOOL_VERTS,
     ID_TOOL_LINEDEFS,
+	ID_TOOL_SECTORS,
     ID_TOOL_MAX
 };
 

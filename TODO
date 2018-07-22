@@ -1,9 +1,9 @@
 + Properties dialog
 + Patch loader
 * Better editing
+* Sector editing
 - TEXTUREx loader
 - SideDefs in properties dialog
-- Sector editing
 - Saving
 - 3D Mode
 - Hexen format

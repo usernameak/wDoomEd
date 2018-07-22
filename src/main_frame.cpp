@@ -32,6 +32,10 @@ WDEdMainFrame::WDEdMainFrame() : wxFrame::wxFrame(nullptr, wxID_ANY, "wDoomEd") 
         wxImage img("res/icon/lines.png");
         toolBar->AddRadioTool(ID_TOOL_LINEDEFS, "Linedefs", img);
     }
+    {
+        wxImage img("res/icon/sectors.png");
+        toolBar->AddRadioTool(ID_TOOL_SECTORS, "Sectors", img);
+    }
     SetToolBar(toolBar);
 
     int attribs[] = {
@@ -66,6 +70,9 @@ void WDEdMainFrame::ChangeTool(wxCommandEvent &event) {
         break;
         case ID_TOOL_LINEDEFS:
             WDEdMapEditor::SetTool(WDEdMapEditor::WDED_ME_TOOL_LINES);
+        break;
+        case ID_TOOL_SECTORS:
+            WDEdMapEditor::SetTool(WDEdMapEditor::WDED_ME_TOOL_SECTORS);
         break;
     }
     canvas->Refresh();

@@ -19,6 +19,7 @@ namespace WDEdMapEditor {
     enum WDEdMapEditorTool {
         WDED_ME_TOOL_VERTS,
         WDED_ME_TOOL_LINES,
+		WDED_ME_TOOL_SECTORS,
     };
 
     enum WDEdMapEditorDragType {
@@ -131,10 +132,12 @@ namespace WDEdMapEditor {
         void *elem;
         LineDef *line;
         Vertex *vertex;
+        Sector *sector;
         inline WDEdAnyElement() {};
-        inline WDEdAnyElement(void * elem) : elem(elem) {};
+        inline WDEdAnyElement(void *elem) : elem(elem) {};
         inline WDEdAnyElement(LineDef *line) : line(line) {};
         inline WDEdAnyElement(Vertex *vertex) : vertex(vertex) {};
+        inline WDEdAnyElement(Sector *sector) : sector(sector) {};
     };
 
     extern WDEdMapEditorDragType dragging;
@@ -150,7 +153,7 @@ namespace WDEdMapEditor {
     
     extern WDEdMapEditorTool currentTool;
 
-    extern int pointedX, pointedY;
+    extern int pointedX, pointedY, rawPointedX, rawPointedY;
 
     extern std::vector<LineDef> mapLinedefs;
     extern bool mapIsCurrentlyLoaded;
