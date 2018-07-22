@@ -151,4 +151,5 @@ namespace WDEdMapEditor {
     void SaveArchive(wxString target);
     void SetTool(WDEdMapEditorTool tool);
     bool IsElementHighlighted(const WDEdAnyElement &elem);
+    void DeleteVertexAndShiftRefs(const uint16_t);
 }

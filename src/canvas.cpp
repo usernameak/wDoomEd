@@ -6,6 +6,7 @@
 
 #include <cmath>
 #include <climits>
+#include <algorithm>
 
 #include <GL/glu.h>
 
@@ -191,9 +192,9 @@ void WDEdMainCanvas::RenderLines() {
 
 void WDEdMainCanvas::RenderVertices() {
 	glBegin(GL_QUADS);
-	for (std::vector<WDEdMapEditor::Vertex>::iterator it =
-			WDEdMapEditor::mapVertexes.begin();
-			it != WDEdMapEditor::mapVertexes.end(); ++it) {
+	for (std::vector<WDEdMapEditor::Vertex>::reverse_iterator it =
+			WDEdMapEditor::mapVertexes.rbegin();
+			it != WDEdMapEditor::mapVertexes.rend(); ++it) {
 		if (IsElementHighlighted(&*it)) {
 			glColor4f(1.0, 0.6, 0.0, 1.0);
 		}
@@ -238,8 +239,17 @@ void WDEdMainCanvas::StartDragging(wxMouseEvent& event) {
 				break;
 			case WDED_ME_TOOL_LINES:
 				LineDef line;
-				mapVertexes.push_back(Vertex(pointedX, pointedY));
-				line.beginVertex = mapVertexes.size() - 1;
+				std::vector<Vertex>::iterator v1;
+				if(!hoveredVertex ||
+						(v1 = std::find_if(mapVertexes.begin(), mapVertexes.end(),
+							[](const Vertex &vc){
+								return &vc == hoveredVertex;
+							})) == mapVertexes.end()) {
+					mapVertexes.push_back(Vertex(pointedX, pointedY));
+					line.beginVertex = mapVertexes.size() - 1;
+				} else {
+					line.beginVertex = v1 - mapVertexes.begin();
+				}
 				mapVertexes.push_back(Vertex(pointedX, pointedY));
 				line.endVertex = mapVertexes.size() - 1;
 				line.flags = 1;
@@ -271,6 +281,15 @@ void WDEdMainCanvas::StartDragging(wxMouseEvent& event) {
 void WDEdMainCanvas::EndDragging(wxMouseEvent& event) {
 	ReleaseMouse();
 	wxSetCursor(wxCURSOR_ARROW);
+	if(dragging == WDED_DRAG_DRAWLINE) {
+		if(hoveredVertex) {
+			DeleteVertexAndShiftRefs(draggingElement.line->endVertex);
+			draggingElement.line->endVertex = std::find_if(mapVertexes.begin(), mapVertexes.end(),
+					[](const Vertex &vc){
+						return &vc == hoveredVertex;
+					}) - mapVertexes.begin();
+		}
+	}
 	dragging = WDED_DRAG_NONE;
 	draggingElement.elem = nullptr;
 }
@@ -378,7 +397,7 @@ void WDEdMainCanvas::MouseMove(wxMouseEvent& event) {
 				WDEdMapEditor::mapVertexes.begin();
 				it != WDEdMapEditor::mapVertexes.end(); ++it) {
 			double dist = distance(it->x, it->y, wpos.x, wpos.y);
-			if (dist < leastDist) {
+			if (dist < leastDist && !(dragging == WDED_DRAG_DRAWLINE && it - mapVertexes.begin() == draggingElement.line->beginVertex)) {
 				leastDist = dist;
 				leastVert = &*it;
 			}

@@ -221,3 +221,16 @@ bool WDEdMapEditor::IsElementHighlighted(const WDEdAnyElement &elem) {
 	return (dragging == WDED_DRAG_NONE && (elem.elem == hoveredElement.elem || elem.vertex == hoveredVertex))
 			|| elem.elem == draggingElement.elem;
 }
+
+void WDEdMapEditor::DeleteVertexAndShiftRefs(const uint16_t vertID) {
+	for(auto &it : mapLinedefs) {
+		if(it.beginVertex > vertID) {
+			it.beginVertex--;
+		}
+		if(it.endVertex > vertID) {
+			it.endVertex--;
+		}
+
+	}
+	mapVertexes.erase(mapVertexes.cbegin() + vertID);
+}
