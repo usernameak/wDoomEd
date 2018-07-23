@@ -45,9 +45,10 @@ class WDEdTexture2D {
         void Destroy(wxGLContext *);
         wxString name;
         int imageWidth, imageHeight;
+        wxBitmap *bitmap;
     private:
         std::map<wxGLContext *, GLuint> units;
         int bytesPerPixel;
-        bool hasAlpha;
+        bool hasAlpha, owns;
         GLubyte* imageData;
 };

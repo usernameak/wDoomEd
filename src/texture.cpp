@@ -130,7 +130,7 @@ bool WDEdDoomPatchHandler::SaveFile (wxImage *image, wxOutputStream & stream, bo
 }
 
 
-WDEdTexture2D::WDEdTexture2D(wxImage *img, wxString name, bool owns) : name(name) {
+WDEdTexture2D::WDEdTexture2D(wxImage *img, wxString name, bool owns) : name(name), owns(owns) {
 
     imageWidth = img->GetWidth();
     imageHeight = img->GetHeight();
@@ -158,10 +158,13 @@ WDEdTexture2D::WDEdTexture2D(wxImage *img, wxString name, bool owns) : name(name
 			alphaData[ x+(rev_val-y)*imageWidth ];
 		}
 	}
+	this->bitmap = new wxBitmap(*img);
 	if(owns) delete img;
 }
 
-WDEdTexture2D::~WDEdTexture2D() {}
+WDEdTexture2D::~WDEdTexture2D() {
+	delete bitmap;
+}
 
 void WDEdTexture2D::Bind(wxGLContext *ctx) {
     bool haveToCreate = false;

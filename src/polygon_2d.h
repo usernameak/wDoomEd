@@ -64,7 +64,7 @@ private:
 		std::vector<int>		edges_out;
 		bool			ok;
 		double			distance;
-		vertex_t(double x=0, double y=0) { this->x = x; this->y = y; ok = true; }
+		vertex_t(double x=0, double y=0) { this->x = x; this->y = y; ok = true; } // @suppress("Class members should be properly initialized")
 		operator WDEdMathUtil::Point() const {return WDEdMathUtil::Point((float)x, (float)y);}
 	};
 	struct poly_outline_t

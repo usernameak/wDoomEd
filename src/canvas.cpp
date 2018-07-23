@@ -584,6 +584,35 @@ void WDEdMainCanvas::OpenPropertiesMenu(wxMouseEvent& event) {
 			dlg.AddNumberField<uint16_t>("Special tag",
 					&hoveredElement.line->arg0);
 			break;
+		case WDED_ME_TOOL_SECTORS:
+			dlg.AddGroup("General");
+			dlg.AddNumberField<uint16_t>("Light level", &hoveredElement.sector->lightLevel);
+			dlg.AddNumericComboBox<uint16_t>("Sector special", &hoveredElement.sector->special, 0x1F, {
+					{ 0, "None" },
+					{ 1, "Light blink random" },
+					{ 2, "Light blink 0.5 second" },
+					{ 3, "Light blink 1 second" },
+					{ 4, "Light blink 0.5 second + 20% damage per second" },
+					{ 5, "10% damage per second" },
+					{ 7, "5% damage per second" },
+					{ 8, "Light oscillate" },
+					{ 9, "Secret" },
+					{ 10, "Close door after 30 sec" },
+					{ 11, "20% damage and end level when dead" },
+					{ 12, "Light blink 0.5 sec, synchronized" },
+					{ 13, "Light blink 1.0 sec, synchronized" },
+					{ 14, "Open door after 5 min" },
+					{ 16, "20% damage per second" },
+					{ 17, "Light flicker" },
+			});
+			dlg.AddNumberField<uint16_t>("Sector tag", &hoveredElement.sector->tag);
+			dlg.AddGroup("Floor");
+			dlg.AddTextureField("Floor texture", wadTextures, &hoveredElement.sector->floorTexture);
+			dlg.AddNumberField<int16_t>("Floor height", &hoveredElement.sector->floorHeight);
+			dlg.AddGroup("Ceiling");
+			dlg.AddTextureField("Floor texture", wadTextures, &hoveredElement.sector->ceilingTexture);
+			dlg.AddNumberField<int16_t>("Ceiling height", &hoveredElement.sector->ceilingHeight);
+			break;
 		}
 		dlg.Finish();
 		if (dlg.ShowModal() == wxID_OK) {

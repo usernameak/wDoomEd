@@ -8,6 +8,25 @@ WDEdPropertiesDialog::WDEdPropertiesDialog(wxWindow *parent) : wxDialog(parent, 
     SetSizer(rootSizer);
 }
 
+WDEdPropertiesDialog* WDEdPropertiesDialog::AddTextureField(wxString name,
+		std::map<wxString, WDEdTexture2D *> textures, char (*value)[8]) {
+	char valueStr[9] = {0};
+	strncpy(valueStr, (const char *) value, 8);
+	try {
+		wxBitmap *bmp = textures.at(valueStr)->bitmap;
+		sizer->Add(new wxBitmapButton(panel,
+										  wxID_ANY,
+										  *bmp,
+										  wxDefaultPosition, wxDefaultSize,
+										  0L
+										 ), wxGBPosition(sizer->GetRows(), 0), wxGBSpan(1, 2), wxEXPAND);
+
+	} catch(std::out_of_range &e) {
+		// TODO:
+	}
+	return this;
+}
+
 WDEdPropertiesDialog *WDEdPropertiesDialog::Finish() {
     AddNoBorderGroup();
     sizer->Add(new wxButton(panel, wxID_OK, "OK"), wxGBPosition(sizer->GetRows(), 0));
